@@ -21,6 +21,12 @@ The **first installation requires internet**. After dependencies are installed, 
 
 All personal data lives in the ignored **`data/`** folder inside your clone. The public repository contains generic templates and a question catalog—**not anyone’s resume or private history**. Stop the server with Ctrl+C before moving the folder.
 
+## Workspace preview
+
+![Desktop workspace with synthetic demonstration data](docs/images/workspace.png)
+
+_Illustration uses synthetic test activity. Your own workspace starts with no logged progress._
+
 ## What you can do
 
 | Workspace           | Purpose                                                                                                   |

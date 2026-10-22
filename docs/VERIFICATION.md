@@ -10,6 +10,8 @@ Linux build workspace; Node 24.22.1, npm 11.19.1, system Chromium. Tests use iso
 
 - `npm run check`: TypeScript client/server, domain/API/export tests, production frontend/server build.
 - `npm run format:check`: source formatting.
+- `node scripts/smoke-launcher.mjs`: install/build/serve/stop via the OS launcher with an isolated data folder; browser auto-open suppressed.
+- `npm run test:exports`: synthetic XLSX, DOCX and LaTeX fixtures for repeatable Office inspection.
 - `npm audit --omit=dev --audit-level=moderate`: dependency audit; registry snapshot, not a security guarantee.
 - `npm run test:e2e`: independent synthetic local server, functional user journey and all-route desktop/mobile capture/overflow checks.
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Working local-first v0.1 application implemented, visually reviewed and tested. Final handoff verification is in progress; see the latest GitHub checks for the exact revision. No calendar deadline, salary promise or guaranteed placement is built into the plan.
+Working local-first v0.1 application implemented, visually reviewed and tested. Implementation checkpoint `457ac77` passed fresh-clone installation, formatting, all tests, build and launcher checks. See GitHub for checks on later documentation-only revisions. No calendar deadline, salary promise or guaranteed placement is built into the plan.
 
 - Repository: https://github.com/OfficialAshish/career-switch-planner
 - Branch: `main`; initial README commit `ec86791` preserved.
@@ -28,11 +28,13 @@ Working local-first v0.1 application implemented, visually reviewed and tested. 
 - `npm run test:e2e`: **3 browser tests** pass, including all ten routes at 1440px/390px, capture/reload, practice, resume modes, visible dialog errors, screenshot uploads, mobile navigation and dark theme.
 - Manual visual inspection: each route at desktop/mobile, AI error, image editor, navigation and dark mobile states. Fixed missing icon glyphs, modal footer/error visibility and route scroll retention found during review.
 - `node scripts/smoke-launcher.mjs`: Linux shell launcher builds and serves an isolated synthetic workspace.
-- Fresh public clone at `c30ba61`: clean install, formatting, type/test/build and browser checks passed; a final-revision clean clone check follows this checkpoint.
+- Fresh public clone at **`457ac77edf64b20104c979e0f004d7889cfe31ec`**: `npm ci`, formatting, type checks, 13 tests, build, 3 browser tests and shell launcher smoke all passed.
 - `npm audit`: zero reported vulnerabilities in the local full dependency snapshot; registry audit is not a security guarantee.
 - GitHub Actions run **39850892067**, revision **4242d625**: **Ubuntu and Windows passed**, including launcher smoke tests and Chromium journeys. Later release-polish commits require their own checks.
-- Synthetic XLSX audit: valid package, 13 sheets, 8 formulas, no external links, zero issues. ISO date strings intentionally retain canonical import format (reported as two text-date warnings). Dashboard rendered and reviewed; print layout refined afterward.
+- Synthetic XLSX audit: valid package, 13 sheets, 8 formulas, no external links, zero issues. ISO date strings intentionally retain canonical import format (reported as two text-date warnings). Final dashboard rendered and visually reviewed after print/font refinements.
 - `npm run test:exports` creates repeatable synthetic Office fixtures under ignored `test-results/exports`; no private workspace is used.
+
+- Privacy scan: tracked files exclude private contact data; supplied token absent from all local commit diffs and Git remote URL. Personal starter import preview/apply validated separately outside the public repository, with zero invented sessions/attempts.
 
 ## Known limits
 
