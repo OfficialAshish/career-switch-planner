@@ -1,3 +1,6 @@
+## Foundation checkpoint
+Shared schemas, generic 200-question catalog, adaptive planner, quick-log proposals, atomic store, optional provider and guarded source reader implemented. `npm run typecheck` and all 8 domain tests pass on Linux/Node 24. Next: local API, portable imports/exports and React interface. ExcelJS transitively uses uuid v4 only; npm reports a moderate advisory affecting uuid v3/v5/v6 buffer calls. Investigate a compatible override; do not downgrade ExcelJS blindly.
+
 # Engineering progress
 
 ## Next step
