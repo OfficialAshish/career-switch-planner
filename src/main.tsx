@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { State, Operation } from '../shared/schema';
 import { tracks } from '../shared/schema';
@@ -80,12 +80,14 @@ function Link({ href, children }: React.PropsWithChildren<{ href: string }>) {
     </a>
   ) : null;
 }
+const RuntimeError = createContext('');
 function Modal({
   title,
   children,
   close,
 }: React.PropsWithChildren<{ title: string; close: () => void }>) {
   const ref = useRef<HTMLDialogElement>(null);
+  const runtimeError = useContext(RuntimeError);
   useEffect(() => {
     ref.current?.showModal();
     return () => ref.current?.close();
@@ -101,9 +103,14 @@ function Modal({
       <header>
         <h2>{title}</h2>
         <Button onClick={close} aria-label="Close dialog">
-          ✕
+          Close
         </Button>
       </header>
+      {runtimeError && (
+        <div role="alert" className="banner error">
+          {runtimeError}
+        </div>
+      )}
       {children}
     </dialog>
   );
@@ -444,8 +451,12 @@ function App() {
     return () => window.removeEventListener('hashchange', h);
   }, []);
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [route]);
+  useEffect(() => {
     document.documentElement.dataset.theme = state?.profile.theme || 'system';
   }, [state?.profile.theme]);
+  useEffect(() => setError(''), [!!editor, !!ai, !!preview, !!attempt]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(''), 4000);
@@ -525,875 +536,894 @@ function App() {
     );
   }
   return (
-    <div className="shell">
-      <aside className={menu ? 'open' : ''}>
-        <a className="brand" href="#Today">
-          <span className="brand-icon">↗</span>
-          <span>
-            Career Switch<small>LOCAL WORKSPACE</small>
-          </span>
-        </a>
-        <nav aria-label="Main navigation">
-          {routes.map((r, i) => (
-            <a
-              key={r}
-              href={'#' + encodeURIComponent(r)}
-              className={route === r ? 'active' : ''}
-              aria-current={route === r ? 'page' : undefined}
-            >
-              <Icon index={i} />
-              {r}
-            </a>
-          ))}
-        </nav>
-        <div className="local-status">
-          <span className="dot" /> Saved on this computer<small>No account. No cloud sync.</small>
-        </div>
-      </aside>
-      <div className="workspace">
-        <div className="topbar">
+    <RuntimeError.Provider value={error}>
+      <div className="shell">
+        <aside
+          className={menu ? 'open' : ''}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setMenu(false);
+          }}
+        >
           <Button
-            className="mobile-menu"
-            onClick={() => setMenu(!menu)}
-            aria-label="Toggle navigation"
+            className="mobile-menu close-nav"
+            aria-label="Close navigation"
+            onClick={() => setMenu(false)}
           >
-            <Icon index={1} />
+            Close
           </Button>
-          <span>{p.name ? p.name + '’s workspace' : 'Your career workspace'}</span>
-          <span className="offline-badge">● Local-first</span>
-        </div>
-        <main>
-          <div className="page-head">
-            <div>
-              <p className="eyebrow">{route.toUpperCase()}</p>
-              <h1>{heading[route] || heading.Today}</h1>
-            </div>
-            {!['Today', 'Settings', 'Plan', 'Practice', 'Resume'].includes(route) && (
-              <Button
-                className="primary"
-                onClick={() =>
-                  edit(
-                    (
-                      {
-                        Notes: 'notes',
-                        'Projects & evidence': 'projects',
-                        Interview: 'stories',
-                        Applications: 'jobs',
-                        Research: 'sources',
-                      } as any
-                    )[route] || 'notes',
-                  )
-                }
+          <a className="brand" href="#Today" onClick={() => setMenu(false)}>
+            <span className="brand-icon">↗</span>
+            <span>
+              Career Switch<small>LOCAL WORKSPACE</small>
+            </span>
+          </a>
+          <nav aria-label="Main navigation">
+            {routes.map((r, i) => (
+              <a
+                key={r}
+                href={'#' + encodeURIComponent(r)}
+                className={route === r ? 'active' : ''}
+                aria-current={route === r ? 'page' : undefined}
+                onClick={() => setMenu(false)}
               >
-                ＋ Add{' '}
-                {route === 'Projects & evidence'
-                  ? 'project'
-                  : route === 'Applications'
-                    ? 'application'
-                    : route === 'Research'
-                      ? 'source'
-                      : route === 'Interview'
-                        ? 'story'
-                        : 'note'}
-              </Button>
-            )}
+                <Icon index={i} />
+                {r}
+              </a>
+            ))}
+          </nav>
+          <div className="local-status">
+            <span className="dot" /> Saved on this computer<small>No account. No cloud sync.</small>
           </div>
-          {error && (
-            <div role="alert" className="banner error">
-              {error}
-              <div className="actions">
-                <Button onClick={() => setError('')}>Dismiss</Button>
+        </aside>
+        <div className="workspace">
+          <div className="topbar">
+            <Button
+              className="mobile-menu"
+              onClick={() => setMenu(!menu)}
+              aria-label="Toggle navigation"
+            >
+              <Icon index={1} />
+            </Button>
+            <span>{p.name ? p.name + '’s workspace' : 'Your career workspace'}</span>
+            <span className="offline-badge">● Local-first</span>
+          </div>
+          <main>
+            <div className="page-head">
+              <div>
+                <p className="eyebrow">{route.toUpperCase()}</p>
+                <h1>{heading[route] || heading.Today}</h1>
+              </div>
+              {!['Today', 'Settings', 'Plan', 'Practice', 'Resume'].includes(route) && (
                 <Button
+                  className="primary"
                   onClick={() =>
-                    run(async () => {
-                      const d = await load();
-                      setState(d.state);
-                      setNotice(d.notice);
-                      setToast('Latest workspace loaded. Existing open form text was preserved.');
-                    })
+                    edit(
+                      (
+                        {
+                          Notes: 'notes',
+                          'Projects & evidence': 'projects',
+                          Interview: 'stories',
+                          Applications: 'jobs',
+                          Research: 'sources',
+                        } as any
+                      )[route] || 'notes',
+                    )
                   }
                 >
-                  Load latest workspace
+                  ＋ Add{' '}
+                  {route === 'Projects & evidence'
+                    ? 'project'
+                    : route === 'Applications'
+                      ? 'application'
+                      : route === 'Research'
+                        ? 'source'
+                        : route === 'Interview'
+                          ? 'story'
+                          : 'note'}
                 </Button>
-              </div>
-              <small>
-                On a conflict, copy your draft first, load latest, then review before saving again.
-              </small>
+              )}
             </div>
-          )}
-          {notice && <div className="banner">{notice}</div>}
-          {busy && (
-            <div className="working" role="status">
-              Working locally…
-            </div>
-          )}
-          {route === 'Today' && (
-            <>
-              <section className="hero">
-                <div>
-                  <p className="eyebrow">NEXT SMALL STEP</p>
-                  <h2>{plan.available[0]?.title || 'Review your readiness evidence'}</h2>
-                  <p>
-                    {plan.available[0]
-                      ? `${Math.round((plan.available[0].estimateMinutes / 60) * 10) / 10}h estimated · ${plan.available[0].track} · move the outcome, not your sleep.`
-                      : 'All available work is done or blocked. Review gates and prerequisites.'}
-                  </p>
-                  <Button className="primary" onClick={() => nav('Plan')}>
-                    Open my plan →
-                  </Button>
-                </div>
-                <div className="hero-mark" aria-hidden="true">
-                  ↗
-                </div>
-              </section>
-              <div className="metrics">
-                <article>
-                  <small>THIS WEEK</small>
-                  <strong>
-                    {(plan.actualMinutes / 60).toFixed(1)} <em>/ {p.weeklyHours}h</em>
-                  </strong>
-                  <p>Time logged once, across all tracks</p>
-                </article>
-                <article>
-                  <small>OUTCOMES DONE</small>
-                  <strong>
-                    {plan.done}
-                    <em> / {plan.total}</em>
-                  </strong>
-                  <p>Completion, not a streak</p>
-                </article>
-                <article>
-                  <small>READY TO DEFEND</small>
-                  <strong>
-                    {plan.verifiedGates}
-                    <em> / {state.gates.length}</em>
-                  </strong>
-                  <p>Evidence-backed readiness gates</p>
-                </article>
-              </div>
-              <div className="two-col">
-                <QuickLog state={state} preview={setPreview} run={run} openAi={setAi} />
-                <section className="panel">
-                  <div className="section-title">
-                    <h2>Revision queue</h2>
-                    <Button
-                      onClick={() => {
-                        setDueOnly(true);
-                        nav('Practice');
-                      }}
-                    >
-                      See practice
-                    </Button>
-                  </div>
-                  {plan.due.length ? (
-                    plan.due.slice(0, 4).map((q) => (
-                      <div className="list-row" key={q.id}>
-                        <span>
-                          {q.title}
-                          <small>{q.pattern}</small>
-                        </span>
-                        <Button
-                          onClick={() =>
-                            setAttempt({
-                              q,
-                              date: localDay(),
-                              minutes: 30,
-                              result: 'Hinted',
-                              notes: '',
-                              language: 'Python',
-                            })
-                          }
-                        >
-                          Review
-                        </Button>
-                      </div>
-                    ))
-                  ) : (
-                    <Empty>
-                      No reviews due. Log a practice attempt to start your spaced-recall queue.
-                    </Empty>
-                  )}
-                </section>
-              </div>
-              <section className="panel">
-                <h2>Recent sessions</h2>
-                {state.sessions.length ? (
-                  state.sessions
-                    .slice(-5)
-                    .reverse()
-                    .map((s) => (
-                      <div className="list-row" key={s.id}>
-                        <span>
-                          {s.summary}
-                          <small>
-                            {s.date} · {s.track}
-                          </small>
-                        </span>
-                        <div className="actions">
-                          <strong>{s.minutes} min</strong>
-                          <Button onClick={() => edit('sessions', s)}>Edit</Button>
-                        </div>
-                      </div>
-                    ))
-                ) : (
-                  <Empty>
-                    Your first real session belongs here. Nothing has been filled in for you.
-                  </Empty>
-                )}
-              </section>
-            </>
-          )}
-          {route === 'Plan' && (
-            <>
-              <section className="panel">
-                <div className="section-title">
-                  <h2>Adaptive forecast</h2>
-                  <Button onClick={() => nav('Settings')}>Change capacity</Button>
-                </div>
-                <div className="forecast">
-                  <strong>{plan.forecast || 'No remaining work'}</strong>
-                  <p>
-                    {plan.forecast
-                      ? `Indicative range: ${plan.forecastRange.join(' to ')} · ${p.weeklyHours}h/week`
-                      : 'Review readiness before applying.'}
-                  </p>
-                </div>
-                <p>
-                  {plan.observed
-                    ? `Calibrated on ${plan.paceSamples} completed tasks with logged time. Your observed estimate multiplier: ${plan.pace.toFixed(2)}×.`
-                    : 'Low confidence: using editable task estimates until at least five completed tasks have logged time.'}{' '}
-                  Blocked work is included in remaining scope. This is not a promised offer or
-                  joining date.
-                </p>
-                {p.goalDate && (
-                  <p className="callout">
-                    Your optional goal: {p.goalDate}. It does not compress the syllabus. Contractual
-                    notice: {p.noticeDays} days; early release is not assumed.
-                  </p>
-                )}
-                <p className="muted">
-                  A 3-hour day and a 0-hour day are both valid. Review once a week. Move unfinished
-                  outcomes forward; do not create hour debt. SQL, mocks and applications count
-                  inside your weekly budget.
-                </p>
-              </section>
-              <div className="section-title">
-                <h2>Outcomes & prerequisites</h2>
+            {error && (
+              <div role="alert" className="banner error">
+                {error}
                 <div className="actions">
+                  <Button onClick={() => setError('')}>Dismiss</Button>
                   <Button
                     onClick={() =>
-                      setAi({
-                        mode: 'plan',
-                        text: 'Refine my current plan without removing important interview preparation. Keep weekly capacity realistic.',
+                      run(async () => {
+                        const d = await load();
+                        setState(d.state);
+                        setNotice(d.notice);
+                        setToast('Latest workspace loaded. Existing open form text was preserved.');
                       })
                     }
                   >
-                    AI plan proposal
-                  </Button>
-                  <Button className="primary" onClick={() => edit('tasks')}>
-                    ＋ Add outcome
+                    Load latest workspace
                   </Button>
                 </div>
+                <small>
+                  On a conflict, copy your draft first, load latest, then review before saving
+                  again.
+                </small>
               </div>
-              <Field label="Find an outcome">
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Python, graphs, interviews…"
-                />
-              </Field>
-              <div className="task-list">
-                {state.tasks
-                  .filter((t) =>
-                    (t.title + ' ' + t.track).toLowerCase().includes(search.toLowerCase()),
-                  )
-                  .map((t) => (
-                    <article className="task" key={t.id}>
-                      <span className={'status-icon ' + t.status}>
-                        {t.status === 'done' ? '✓' : '○'}
-                      </span>
-                      <div>
-                        <h3>{t.title}</h3>
-                        <p>
-                          {t.track} · {(t.estimateMinutes / 60).toFixed(1)}h estimate · {t.status}{' '}
-                          {t.prerequisites.length
-                            ? `· ${t.prerequisites.length} prerequisites`
-                            : ''}
-                        </p>
-                        {t.evidence && <small>{t.evidence}</small>}
-                      </div>
-                      <Button onClick={() => edit('tasks', t)}>Edit</Button>
-                    </article>
-                  ))}
+            )}
+            {notice && <div className="banner">{notice}</div>}
+            {busy && (
+              <div className="working" role="status">
+                Working locally…
               </div>
-              <section className="panel">
-                <h2>Next scheduled weeks</h2>
-                <p>
-                  Capacity-limited work blocks, in prerequisite order. Edits and time logs
-                  recalculate this queue.
-                </p>
-                {plan.weeks.slice(0, 5).map((w: any, i: number) => (
-                  <div className="list-row" key={i}>
-                    <span>
-                      Week {i + 1}
-                      <small>
-                        {w.start} · {(w.minutes / 60).toFixed(1)}h ·{' '}
-                        {w.tasks
-                          .map((t: any) => `${t.title} (${Math.round(t.minutes)} min)`)
-                          .join(' → ')}
-                      </small>
-                    </span>
+            )}
+            {route === 'Today' && (
+              <>
+                <section className="hero">
+                  <div>
+                    <p className="eyebrow">NEXT SMALL STEP</p>
+                    <h2>{plan.available[0]?.title || 'Review your readiness evidence'}</h2>
+                    <p>
+                      {plan.available[0]
+                        ? `${Math.round((plan.available[0].estimateMinutes / 60) * 10) / 10}h estimated · ${plan.available[0].track} · move the outcome, not your sleep.`
+                        : 'All available work is done or blocked. Review gates and prerequisites.'}
+                    </p>
+                    <Button className="primary" onClick={() => nav('Plan')}>
+                      Open my plan →
+                    </Button>
                   </div>
-                ))}
-              </section>
-            </>
-          )}
-          {route === 'Practice' && (
-            <>
-              <p className="lede">
-                150 DSA + 50 SQL questions. Python first; use another language only if the role
-                requires it. Review intervals: 3 → 7 → 21 days after independent recall, 1 day after
-                help or failure. Titles and links, not copied editorials.
-              </p>
-              <div className="filters">
-                <Field label="Syllabus">
-                  <select
-                    value={kind}
-                    onChange={(e) => {
-                      setKind(e.target.value);
-                      setPattern('All');
-                    }}
-                  >
-                    <option>DSA</option>
-                    <option>SQL</option>
-                  </select>
-                </Field>
-                <Field label="Pattern">
-                  <select value={pattern} onChange={(e) => setPattern(e.target.value)}>
-                    <option>All</option>
-                    {[
-                      ...new Set(
-                        state.questions.filter((q) => q.kind === kind).map((q) => q.pattern),
-                      ),
-                    ].map((v) => (
-                      <option key={v}>{v}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Difficulty">
-                  <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                    {['All', 'Easy', 'Medium', 'Hard'].map((v) => (
-                      <option key={v}>{v}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Find a question">
+                  <div className="hero-mark" aria-hidden="true">
+                    ↗
+                  </div>
+                </section>
+                <div className="metrics">
+                  <article>
+                    <small>THIS WEEK</small>
+                    <strong>
+                      {(plan.actualMinutes / 60).toFixed(1)} <em>/ {p.weeklyHours}h</em>
+                    </strong>
+                    <p>Time logged once, across all tracks</p>
+                  </article>
+                  <article>
+                    <small>OUTCOMES DONE</small>
+                    <strong>
+                      {plan.done}
+                      <em> / {plan.total}</em>
+                    </strong>
+                    <p>Completion, not a streak</p>
+                  </article>
+                  <article>
+                    <small>READY TO DEFEND</small>
+                    <strong>
+                      {plan.verifiedGates}
+                      <em> / {state.gates.length}</em>
+                    </strong>
+                    <p>Evidence-backed readiness gates</p>
+                  </article>
+                </div>
+                <div className="two-col">
+                  <QuickLog state={state} preview={setPreview} run={run} openAi={setAi} />
+                  <section className="panel">
+                    <div className="section-title">
+                      <h2>Revision queue</h2>
+                      <Button
+                        onClick={() => {
+                          setDueOnly(true);
+                          nav('Practice');
+                        }}
+                      >
+                        See practice
+                      </Button>
+                    </div>
+                    {plan.due.length ? (
+                      plan.due.slice(0, 4).map((q) => (
+                        <div className="list-row" key={q.id}>
+                          <span>
+                            {q.title}
+                            <small>{q.pattern}</small>
+                          </span>
+                          <Button
+                            onClick={() =>
+                              setAttempt({
+                                q,
+                                date: localDay(),
+                                minutes: 30,
+                                result: 'Hinted',
+                                notes: '',
+                                language: 'Python',
+                              })
+                            }
+                          >
+                            Review
+                          </Button>
+                        </div>
+                      ))
+                    ) : (
+                      <Empty>
+                        No reviews due. Log a practice attempt to start your spaced-recall queue.
+                      </Empty>
+                    )}
+                  </section>
+                </div>
+                <section className="panel">
+                  <h2>Recent sessions</h2>
+                  {state.sessions.length ? (
+                    state.sessions
+                      .slice(-5)
+                      .reverse()
+                      .map((s) => (
+                        <div className="list-row" key={s.id}>
+                          <span>
+                            {s.summary}
+                            <small>
+                              {s.date} · {s.track}
+                            </small>
+                          </span>
+                          <div className="actions">
+                            <strong>{s.minutes} min</strong>
+                            <Button onClick={() => edit('sessions', s)}>Edit</Button>
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <Empty>
+                      Your first real session belongs here. Nothing has been filled in for you.
+                    </Empty>
+                  )}
+                </section>
+              </>
+            )}
+            {route === 'Plan' && (
+              <>
+                <section className="panel">
+                  <div className="section-title">
+                    <h2>Adaptive forecast</h2>
+                    <Button onClick={() => nav('Settings')}>Change capacity</Button>
+                  </div>
+                  <div className="forecast">
+                    <strong>{plan.forecast || 'No remaining work'}</strong>
+                    <p>
+                      {plan.forecast
+                        ? `Indicative range: ${plan.forecastRange.join(' to ')} · ${p.weeklyHours}h/week`
+                        : 'Review readiness before applying.'}
+                    </p>
+                  </div>
+                  <p>
+                    {plan.observed
+                      ? `Calibrated on ${plan.paceSamples} completed tasks with logged time. Your observed estimate multiplier: ${plan.pace.toFixed(2)}×.`
+                      : 'Low confidence: using editable task estimates until at least five completed tasks have logged time.'}{' '}
+                    Blocked work is included in remaining scope. This is not a promised offer or
+                    joining date.
+                  </p>
+                  {p.goalDate && (
+                    <p className="callout">
+                      Your optional goal: {p.goalDate}. It does not compress the syllabus.
+                      Contractual notice: {p.noticeDays} days; early release is not assumed.
+                    </p>
+                  )}
+                  <p className="muted">
+                    A 3-hour day and a 0-hour day are both valid. Review once a week. Move
+                    unfinished outcomes forward; do not create hour debt. SQL, mocks and
+                    applications count inside your weekly budget.
+                  </p>
+                </section>
+                <div className="section-title">
+                  <h2>Outcomes & prerequisites</h2>
+                  <div className="actions">
+                    <Button
+                      onClick={() =>
+                        setAi({
+                          mode: 'plan',
+                          text: 'Refine my current plan without removing important interview preparation. Keep weekly capacity realistic.',
+                        })
+                      }
+                    >
+                      AI plan proposal
+                    </Button>
+                    <Button className="primary" onClick={() => edit('tasks')}>
+                      ＋ Add outcome
+                    </Button>
+                  </div>
+                </div>
+                <Field label="Find an outcome">
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Number or title"
+                    placeholder="Python, graphs, interviews…"
                   />
                 </Field>
-              </div>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={dueOnly}
-                  onChange={(e) => setDueOnly(e.target.checked)}
-                />
-                Due reviews only
-              </label>
-              <p className="table-hint">
-                Swipe the table sideways to reach status and Log attempt.
-              </p>
-              <div
-                className="table-wrap"
-                tabIndex={0}
-                aria-label="Practice catalog; scroll horizontally on smaller screens"
-              >
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Problem / pattern</th>
-                      <th>Difficulty</th>
-                      <th>Status / review</th>
-                      <th>Practice</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.questions
-                      .filter(
-                        (q) =>
-                          q.kind === kind &&
-                          (pattern === 'All' || q.pattern === pattern) &&
-                          (difficulty === 'All' || q.difficulty === difficulty) &&
-                          (q.title + ' ' + q.number).toLowerCase().includes(search.toLowerCase()) &&
-                          (!dueOnly || (nextReview(state, q) || '9999') <= localDay()),
-                      )
-                      .map((q) => (
-                        <tr key={q.id}>
-                          <td>
-                            <Link href={q.url}>
-                              {q.number}. {q.title}
-                            </Link>
-                            <small>{q.pattern}</small>
-                            {q.fallback && (
-                              <details>
-                                <summary>Access fallback</summary>
-                                {q.fallback}
-                              </details>
-                            )}
-                          </td>
-                          <td>
-                            <span className={'tag ' + q.difficulty.toLowerCase()}>
-                              {q.difficulty}
-                            </span>
-                          </td>
-                          <td>
-                            {q.status}
-                            <small>{nextReview(state, q) || 'No attempt yet'}</small>
-                          </td>
-                          <td>
-                            <Button
-                              onClick={() =>
-                                setAttempt({
-                                  q,
-                                  date: localDay(),
-                                  minutes: 30,
-                                  result: 'Hinted',
-                                  notes: '',
-                                  language: q.kind === 'SQL' ? 'PostgreSQL' : 'Python',
-                                })
-                              }
-                            >
-                              Log attempt
-                            </Button>
-                          </td>
-                        </tr>
+                <div className="task-list">
+                  {state.tasks
+                    .filter((t) =>
+                      (t.title + ' ' + t.track).toLowerCase().includes(search.toLowerCase()),
+                    )
+                    .map((t) => (
+                      <article className="task" key={t.id}>
+                        <span className={'status-icon ' + t.status}>
+                          {t.status === 'done' ? '✓' : '○'}
+                        </span>
+                        <div>
+                          <h3>{t.title}</h3>
+                          <p>
+                            {t.track} · {(t.estimateMinutes / 60).toFixed(1)}h estimate · {t.status}{' '}
+                            {t.prerequisites.length
+                              ? `· ${t.prerequisites.length} prerequisites`
+                              : ''}
+                          </p>
+                          {t.evidence && <small>{t.evidence}</small>}
+                        </div>
+                        <Button onClick={() => edit('tasks', t)}>Edit</Button>
+                      </article>
+                    ))}
+                </div>
+                <section className="panel">
+                  <h2>Next scheduled weeks</h2>
+                  <p>
+                    Capacity-limited work blocks, in prerequisite order. Edits and time logs
+                    recalculate this queue.
+                  </p>
+                  {plan.weeks.slice(0, 5).map((w: any, i: number) => (
+                    <div className="list-row" key={i}>
+                      <span>
+                        Week {i + 1}
+                        <small>
+                          {w.start} · {(w.minutes / 60).toFixed(1)}h ·{' '}
+                          {w.tasks
+                            .map((t: any) => `${t.title} (${Math.round(t.minutes)} min)`)
+                            .join(' → ')}
+                        </small>
+                      </span>
+                    </div>
+                  ))}
+                </section>
+              </>
+            )}
+            {route === 'Practice' && (
+              <>
+                <p className="lede">
+                  150 DSA + 50 SQL questions. Python first; use another language only if the role
+                  requires it. Review intervals: 3 → 7 → 21 days after independent recall, 1 day
+                  after help or failure. Titles and links, not copied editorials.
+                </p>
+                <div className="filters">
+                  <Field label="Syllabus">
+                    <select
+                      value={kind}
+                      onChange={(e) => {
+                        setKind(e.target.value);
+                        setPattern('All');
+                      }}
+                    >
+                      <option>DSA</option>
+                      <option>SQL</option>
+                    </select>
+                  </Field>
+                  <Field label="Pattern">
+                    <select value={pattern} onChange={(e) => setPattern(e.target.value)}>
+                      <option>All</option>
+                      {[
+                        ...new Set(
+                          state.questions.filter((q) => q.kind === kind).map((q) => q.pattern),
+                        ),
+                      ].map((v) => (
+                        <option key={v}>{v}</option>
                       ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-          {route === 'Notes' && (
-            <>
-              <Field label="Search notes">
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Topic, tag or keyword"
-                />
-              </Field>
-              {state.notes.length ? (
-                cards(
-                  'notes',
-                  state.notes.filter((n) =>
-                    (n.title + n.body + n.category + n.tags.join(' '))
-                      .toLowerCase()
-                      .includes(search.toLowerCase()),
-                  ),
-                  (n) => n.body,
-                )
-              ) : (
-                <Empty>
-                  Add a categorized note, paste a useful explanation, or attach a screenshot. Your
-                  images stay in the data folder.
-                </Empty>
-              )}
-            </>
-          )}
-          {route === 'Projects & evidence' && (
-            <>
-              <p className="lede">
-                Build → test → explain → collect evidence. Do not add fake metrics or private client
-                artifacts. A status is an attestation, not an automatic audit.
-              </p>
-              {state.projects.length ? (
-                cards('projects', state.projects, (r) => r.summary + '\n' + r.evidence)
-              ) : (
-                <Empty>
-                  Add your existing project. Track what you actually need to finish rather than
-                  rebuilding it from scratch.
-                </Empty>
-              )}
-              <div className="section-title">
-                <h2>Readiness gates</h2>
-                <Button onClick={() => edit('gates')}>＋ Add gate</Button>
-              </div>
-              {cards(
-                'gates',
-                state.gates,
-                (r) =>
-                  r.criteria +
-                  '\n' +
-                  (r.evidence ? 'Evidence: ' + r.evidence : 'No evidence recorded yet.'),
-              )}
-            </>
-          )}
-          {route === 'Resume' && (
-            <>
-              <div className="banner">
-                Current mode includes only claims you mark Verified. Future-state mode may use
-                completed-style wording for your target, but remains a labeled working draft until
-                every claim is true. Profile text is self-entered and must also be checked.
-              </div>
-              <div className="actions toolbar">
+                    </select>
+                  </Field>
+                  <Field label="Difficulty">
+                    <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                      {['All', 'Easy', 'Medium', 'Hard'].map((v) => (
+                        <option key={v}>{v}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Find a question">
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Number or title"
+                    />
+                  </Field>
+                </div>
                 <label className="check">
                   <input
                     type="checkbox"
-                    checked={future}
-                    onChange={(e) => setFuture(e.target.checked)}
+                    checked={dueOnly}
+                    onChange={(e) => setDueOnly(e.target.checked)}
                   />
-                  Future-state draft
+                  Due reviews only
                 </label>
-                <Button onClick={() => nav('Settings')}>Edit profile</Button>
-                <Button onClick={() => window.print()}>Print / save PDF</Button>
-                <a className="button" href={'/api/resume.docx?future=' + future}>
-                  DOCX ↓
-                </a>
-                <a className="button" href={'/api/resume.tex?future=' + future}>
-                  LaTeX ↓
-                </a>
-              </div>
-              <div className="two-col resume-layout">
-                <section className="panel no-print">
-                  <div className="section-title">
-                    <h2>Claims & evidence</h2>
-                    <Button className="primary" onClick={() => edit('claims')}>
-                      ＋ Claim
+                <p className="table-hint">
+                  Swipe the table sideways to reach status and Log attempt.
+                </p>
+                <div
+                  className="table-wrap"
+                  tabIndex={0}
+                  aria-label="Practice catalog; scroll horizontally on smaller screens"
+                >
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Problem / pattern</th>
+                        <th>Difficulty</th>
+                        <th>Status / review</th>
+                        <th>Practice</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {state.questions
+                        .filter(
+                          (q) =>
+                            q.kind === kind &&
+                            (pattern === 'All' || q.pattern === pattern) &&
+                            (difficulty === 'All' || q.difficulty === difficulty) &&
+                            (q.title + ' ' + q.number)
+                              .toLowerCase()
+                              .includes(search.toLowerCase()) &&
+                            (!dueOnly || (nextReview(state, q) || '9999') <= localDay()),
+                        )
+                        .map((q) => (
+                          <tr key={q.id}>
+                            <td>
+                              <Link href={q.url}>
+                                {q.number}. {q.title}
+                              </Link>
+                              <small>{q.pattern}</small>
+                              {q.fallback && (
+                                <details>
+                                  <summary>Access fallback</summary>
+                                  {q.fallback}
+                                </details>
+                              )}
+                            </td>
+                            <td>
+                              <span className={'tag ' + q.difficulty.toLowerCase()}>
+                                {q.difficulty}
+                              </span>
+                            </td>
+                            <td>
+                              {q.status}
+                              <small>{nextReview(state, q) || 'No attempt yet'}</small>
+                            </td>
+                            <td>
+                              <Button
+                                onClick={() =>
+                                  setAttempt({
+                                    q,
+                                    date: localDay(),
+                                    minutes: 30,
+                                    result: 'Hinted',
+                                    notes: '',
+                                    language: q.kind === 'SQL' ? 'PostgreSQL' : 'Python',
+                                  })
+                                }
+                              >
+                                Log attempt
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {route === 'Notes' && (
+              <>
+                <Field label="Search notes">
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Topic, tag or keyword"
+                  />
+                </Field>
+                {state.notes.length ? (
+                  cards(
+                    'notes',
+                    state.notes.filter((n) =>
+                      (n.title + n.body + n.category + n.tags.join(' '))
+                        .toLowerCase()
+                        .includes(search.toLowerCase()),
+                    ),
+                    (n) => n.body,
+                  )
+                ) : (
+                  <Empty>
+                    Add a categorized note, paste a useful explanation, or attach a screenshot. Your
+                    images stay in the data folder.
+                  </Empty>
+                )}
+              </>
+            )}
+            {route === 'Projects & evidence' && (
+              <>
+                <p className="lede">
+                  Build → test → explain → collect evidence. Do not add fake metrics or private
+                  client artifacts. A status is an attestation, not an automatic audit.
+                </p>
+                {state.projects.length ? (
+                  cards('projects', state.projects, (r) => r.summary + '\n' + r.evidence)
+                ) : (
+                  <Empty>
+                    Add your existing project. Track what you actually need to finish rather than
+                    rebuilding it from scratch.
+                  </Empty>
+                )}
+                <div className="section-title">
+                  <h2>Readiness gates</h2>
+                  <Button onClick={() => edit('gates')}>＋ Add gate</Button>
+                </div>
+                {cards(
+                  'gates',
+                  state.gates,
+                  (r) =>
+                    r.criteria +
+                    '\n' +
+                    (r.evidence ? 'Evidence: ' + r.evidence : 'No evidence recorded yet.'),
+                )}
+              </>
+            )}
+            {route === 'Resume' && (
+              <>
+                <div className="banner">
+                  Current mode includes only claims you mark Verified. Future-state mode may use
+                  completed-style wording for your target, but remains a labeled working draft until
+                  every claim is true. Profile text is self-entered and must also be checked.
+                </div>
+                <div className="actions toolbar">
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={future}
+                      onChange={(e) => setFuture(e.target.checked)}
+                    />
+                    Future-state draft
+                  </label>
+                  <Button onClick={() => nav('Settings')}>Edit profile</Button>
+                  <Button onClick={() => window.print()}>Print / save PDF</Button>
+                  <a className="button" href={'/api/resume.docx?future=' + future}>
+                    DOCX ↓
+                  </a>
+                  <a className="button" href={'/api/resume.tex?future=' + future}>
+                    LaTeX ↓
+                  </a>
+                </div>
+                <div className="two-col resume-layout">
+                  <section className="panel no-print">
+                    <div className="section-title">
+                      <h2>Claims & evidence</h2>
+                      <Button className="primary" onClick={() => edit('claims')}>
+                        ＋ Claim
+                      </Button>
+                    </div>
+                    {state.claims.length ? (
+                      state.claims.map((c) => (
+                        <article className="claim" key={c.id}>
+                          <span className="tag">
+                            {c.status} · {c.category}
+                          </span>
+                          <p>{c.text}</p>
+                          <small>{c.evidence || 'Evidence not recorded'}</small>
+                          <Button onClick={() => edit('claims', c)}>Edit claim</Button>
+                        </article>
+                      ))
+                    ) : (
+                      <Empty>
+                        Add real experience, project and skill claims. AI can propose wording, but
+                        cannot verify your achievements.
+                      </Empty>
+                    )}
+                    <Button
+                      onClick={() =>
+                        setAi({
+                          mode: 'resume',
+                          text: 'Refine my supplied claims without inventing facts or results. Keep planned work marked Planned.',
+                        })
+                      }
+                    >
+                      AI wording proposal
                     </Button>
-                  </div>
-                  {state.claims.length ? (
-                    state.claims.map((c) => (
-                      <article className="claim" key={c.id}>
-                        <span className="tag">
-                          {c.status} · {c.category}
-                        </span>
-                        <p>{c.text}</p>
-                        <small>{c.evidence || 'Evidence not recorded'}</small>
-                        <Button onClick={() => edit('claims', c)}>Edit claim</Button>
-                      </article>
-                    ))
-                  ) : (
-                    <Empty>
-                      Add real experience, project and skill claims. AI can propose wording, but
-                      cannot verify your achievements.
-                    </Empty>
-                  )}
+                  </section>
+                  <article className="resume-paper" id="resume-print">
+                    <h2>{p.name || 'YOUR NAME'}</h2>
+                    <p>{p.headline || 'Your professional headline'}</p>
+                    <small>{[p.location, p.email, p.phone].filter(Boolean).join(' | ')}</small>
+                    <p className="preline">{p.links}</p>
+                    {future && (
+                      <p className="draft-label">
+                        FUTURE-STATE WORKING DRAFT — VERIFY BEFORE APPLYING
+                      </p>
+                    )}
+                    {p.summary && <p>{p.summary}</p>}
+                    {['Experience', 'Project', 'Skill'].map((category) => (
+                      <section key={category}>
+                        <h3>
+                          {category === 'Project'
+                            ? 'Projects'
+                            : category === 'Skill'
+                              ? 'Skills'
+                              : 'Experience'}
+                        </h3>
+                        {category === 'Experience' && <p className="preline">{p.employment}</p>}
+                        <ul>
+                          {state.claims
+                            .filter(
+                              (c) => c.category === category && (future || c.status === 'Verified'),
+                            )
+                            .map((c) => (
+                              <li key={c.id}>{c.text}</li>
+                            ))}
+                        </ul>
+                      </section>
+                    ))}
+                    <h3>Education</h3>
+                    <p className="preline">{p.education}</p>
+                  </article>
+                </div>
+              </>
+            )}
+            {route === 'Interview' && (
+              <>
+                <p className="lede">
+                  Answer directly, give one real example, state your contribution and trade-off,
+                  then offer a relevant follow-up. Hooks invite questions; they do not control the
+                  interviewer. Record a 3–5 minute answer twice a week inside your weekly time
+                  budget.
+                </p>
+                {cards(
+                  'stories',
+                  state.stories,
+                  (r) =>
+                    r.prompt +
+                    '\n\n' +
+                    r.body +
+                    '\n\n' +
+                    r.followups.map((f: string) => 'Follow-up: ' + f).join('\n'),
+                )}
+                <section className="panel">
+                  <h2>Mock structure</h2>
+                  <p>
+                    3 min introduction · 20 min coding · 12 min project/RCA · 5 min behavioral · 5
+                    min your questions. Separate design/machine-coding sessions when needed.
+                  </p>
+                  <p>
+                    Score 1–5: correctness, reasoning, clarity, evidence, listening and honesty. Log
+                    one concrete next drill, not a vague “need improvement”.
+                  </p>
                   <Button
                     onClick={() =>
                       setAi({
-                        mode: 'resume',
-                        text: 'Refine my supplied claims without inventing facts or results. Keep planned work marked Planned.',
+                        mode: 'interview',
+                        text: 'Generate a branching mock interview using only my supplied real experience. Ask follow-ups and identify facts I must fill in; do not invent incident causes.',
                       })
                     }
                   >
-                    AI wording proposal
+                    Propose interview drill
                   </Button>
                 </section>
-                <article className="resume-paper" id="resume-print">
-                  <h2>{p.name || 'YOUR NAME'}</h2>
-                  <p>{p.headline || 'Your professional headline'}</p>
-                  <small>{[p.location, p.email, p.phone].filter(Boolean).join(' | ')}</small>
-                  <p className="preline">{p.links}</p>
-                  {future && (
-                    <p className="draft-label">
-                      FUTURE-STATE WORKING DRAFT — VERIFY BEFORE APPLYING
-                    </p>
-                  )}
-                  {p.summary && <p>{p.summary}</p>}
-                  {['Experience', 'Project', 'Skill'].map((category) => (
-                    <section key={category}>
-                      <h3>
-                        {category === 'Project'
-                          ? 'Projects'
-                          : category === 'Skill'
-                            ? 'Skills'
-                            : 'Experience'}
-                      </h3>
-                      {category === 'Experience' && <p className="preline">{p.employment}</p>}
-                      <ul>
-                        {state.claims
-                          .filter(
-                            (c) => c.category === category && (future || c.status === 'Verified'),
-                          )
-                          .map((c) => (
-                            <li key={c.id}>{c.text}</li>
-                          ))}
-                      </ul>
-                    </section>
-                  ))}
-                  <h3>Education</h3>
-                  <p className="preline">{p.education}</p>
-                </article>
-              </div>
-            </>
-          )}
-          {route === 'Interview' && (
-            <>
-              <p className="lede">
-                Answer directly, give one real example, state your contribution and trade-off, then
-                offer a relevant follow-up. Hooks invite questions; they do not control the
-                interviewer. Record a 3–5 minute answer twice a week inside your weekly time budget.
-              </p>
-              {cards(
-                'stories',
-                state.stories,
-                (r) =>
-                  r.prompt +
-                  '\n\n' +
-                  r.body +
-                  '\n\n' +
-                  r.followups.map((f: string) => 'Follow-up: ' + f).join('\n'),
-              )}
-              <section className="panel">
-                <h2>Mock structure</h2>
-                <p>
-                  3 min introduction · 20 min coding · 12 min project/RCA · 5 min behavioral · 5 min
-                  your questions. Separate design/machine-coding sessions when needed.
-                </p>
-                <p>
-                  Score 1–5: correctness, reasoning, clarity, evidence, listening and honesty. Log
-                  one concrete next drill, not a vague “need improvement”.
+              </>
+            )}
+            {route === 'Applications' && (
+              <>
+                <p className="lede">
+                  Check India eligibility, coding ownership, mentoring, workload, fixed pay versus
+                  CTC, employment versus contracting, and notice flexibility. “Remote” does not mean
+                  every country. Research roles early; apply when the relevant gates are ready.
                 </p>
                 <Button
                   onClick={() =>
                     setAi({
-                      mode: 'interview',
-                      text: 'Generate a branching mock interview using only my supplied real experience. Ask follow-ups and identify facts I must fill in; do not invent incident causes.',
+                      mode: 'jd',
+                      text: 'Paste a job description here. Identify must-haves, evidence gaps and small learning outcomes without claiming I already know them.',
                     })
                   }
                 >
-                  Propose interview drill
+                  Plan from a job description
                 </Button>
-              </section>
-            </>
-          )}
-          {route === 'Applications' && (
-            <>
-              <p className="lede">
-                Check India eligibility, coding ownership, mentoring, workload, fixed pay versus
-                CTC, employment versus contracting, and notice flexibility. “Remote” does not mean
-                every country. Research roles early; apply when the relevant gates are ready.
-              </p>
-              <Button
-                onClick={() =>
-                  setAi({
-                    mode: 'jd',
-                    text: 'Paste a job description here. Identify must-haves, evidence gaps and small learning outcomes without claiming I already know them.',
-                  })
-                }
-              >
-                Plan from a job description
-              </Button>
-              {state.jobs.length ? (
-                cards('jobs', state.jobs, (r) => r.role + ' · ' + r.location + '\n' + r.notes)
-              ) : (
-                <Empty>
-                  No applications yet. Add a genuine role and save the source link. There is no
-                  invented pipeline or salary promise.
-                </Empty>
-              )}
-            </>
-          )}
-          {route === 'Research' && (
-            <>
-              <p className="lede">
-                Save dated evidence, distinguish salary bands from your own target, and recheck
-                vacancies before applying. The source reader loads a public page only when you
-                request it; it is not a search engine. AI does not browse by itself.
-              </p>
-              <SourceReader run={run} add={(r) => edit('sources', r)} />
-              {state.sources.length ? (
-                cards('sources', state.sources, (r) => r.excerpt + '\n\n' + r.notes)
-              ) : (
-                <Empty>
-                  No sources saved. Paste a primary-source excerpt or fetch a public HTTPS page.
-                  Blocked pages can be pasted manually.
-                </Empty>
-              )}
-              <Button
-                onClick={() =>
-                  setAi({
-                    mode: 'research',
-                    text: 'Compare the sources I paste below. Preserve source URLs and dates; separate evidence, inference and missing information. Do not invent market claims.',
-                  })
-                }
-              >
-                AI evidence brief
-              </Button>
-            </>
-          )}
-          {route === 'Settings' && (
-            <Settings
-              state={state}
-              save={save}
-              run={run}
-              setState={setState}
-              preview={setPreview}
-            />
-          )}
-          <footer className="page-footer">
-            Private by default · Schema 1 · Revision {state.revision}
-            <span>No guarantees. Real evidence, at your pace.</span>
-          </footer>
-        </main>
-      </div>
-      {toast && (
-        <div role="status" className="toast">
-          ✓ {toast}
-        </div>
-      )}
-      {editor && (
-        <Editor
-          {...editor}
-          existing={(state[editor.collection] as { id: string }[]).some(
-            (r) => r.id === editor.record.id,
-          )}
-          remove={async () => {
-            setState(
-              await api('delete', {
-                revision: state.revision,
-                collection: editor.collection,
-                id: editor.record.id,
-              }),
-            );
-            setToast('Deleted locally; recovery point saved');
-          }}
-          save={save}
-          close={() => setEditor(undefined)}
-          run={run}
-        />
-      )}
-      {attempt && (
-        <Modal title={'Practice: ' + attempt.q.title} close={() => setAttempt(undefined)}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              run(async () => {
-                await save([
-                  {
-                    kind: 'attempt',
-                    value: {
-                      id: uid(),
-                      questionId: attempt.q.id,
-                      date: attempt.date,
-                      minutes: Number(attempt.minutes),
-                      result: attempt.result,
-                      notes: attempt.notes,
-                      language: attempt.language,
-                    },
-                  },
-                ]);
-                setAttempt(undefined);
-              });
-            }}
-          >
-            <div className="form-grid">
-              <Field label="Date">
-                <input
-                  type="date"
-                  required
-                  value={attempt.date}
-                  onChange={(e) => setAttempt({ ...attempt, date: e.target.value })}
-                />
-              </Field>
-              <Field label="Minutes">
-                <input
-                  type="number"
-                  min="1"
-                  max="240"
-                  required
-                  value={attempt.minutes}
-                  onChange={(e) => setAttempt({ ...attempt, minutes: e.target.value })}
-                />
-              </Field>
-            </div>
-            <Field label="Result (be honest)">
-              <select
-                value={attempt.result}
-                onChange={(e) => setAttempt({ ...attempt, result: e.target.value })}
-              >
-                {['Independent', 'Hinted', 'Failed'].map((v) => (
-                  <option key={v}>{v}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Language / SQL dialect">
-              <input
-                value={attempt.language}
-                onChange={(e) => setAttempt({ ...attempt, language: e.target.value })}
+                {state.jobs.length ? (
+                  cards('jobs', state.jobs, (r) => r.role + ' · ' + r.location + '\n' + r.notes)
+                ) : (
+                  <Empty>
+                    No applications yet. Add a genuine role and save the source link. There is no
+                    invented pipeline or salary promise.
+                  </Empty>
+                )}
+              </>
+            )}
+            {route === 'Research' && (
+              <>
+                <p className="lede">
+                  Save dated evidence, distinguish salary bands from your own target, and recheck
+                  vacancies before applying. The source reader loads a public page only when you
+                  request it; it is not a search engine. AI does not browse by itself.
+                </p>
+                <SourceReader run={run} add={(r) => edit('sources', r)} />
+                {state.sources.length ? (
+                  cards('sources', state.sources, (r) => r.excerpt + '\n\n' + r.notes)
+                ) : (
+                  <Empty>
+                    No sources saved. Paste a primary-source excerpt or fetch a public HTTPS page.
+                    Blocked pages can be pasted manually.
+                  </Empty>
+                )}
+                <Button
+                  onClick={() =>
+                    setAi({
+                      mode: 'research',
+                      text: 'Compare the sources I paste below. Preserve source URLs and dates; separate evidence, inference and missing information. Do not invent market claims.',
+                    })
+                  }
+                >
+                  AI evidence brief
+                </Button>
+              </>
+            )}
+            {route === 'Settings' && (
+              <Settings
+                state={state}
+                save={save}
+                run={run}
+                setState={setState}
+                preview={setPreview}
               />
-            </Field>
-            <Field label="Invariant, mistake, complexity, next revision">
-              <textarea
-                value={attempt.notes}
-                onChange={(e) => setAttempt({ ...attempt, notes: e.target.value })}
-              />
-            </Field>
-            <p className="muted">
-              This records recall, not session hours. Use Quick log to log time and an attempt
-              together; never log that time twice.
-            </p>
-            <footer>
-              <Button onClick={() => setAttempt(undefined)}>Cancel</Button>
-              <button className="primary" disabled={busy}>
-                Save attempt
-              </button>
+            )}
+            <footer className="page-footer">
+              Private by default · Schema 1 · Revision {state.revision}
+              <span>No guarantees. Real evidence, at your pace.</span>
             </footer>
-          </form>
-        </Modal>
-      )}
-      {preview && (
-        <Modal title="Review proposed changes" close={() => setPreview(undefined)}>
-          <p>{preview.summary}</p>
-          {preview.warnings?.map((w, i) => (
-            <p className="callout" key={i}>
-              {w}
-            </p>
-          ))}
-          <p>No changes are saved until you apply. Review facts, time and status carefully.</p>
-          <div className="proposal-list">
-            {preview.operations.map((op, i) => (
-              <article key={i}>
-                <span className="tag">
-                  {op.kind} · upsert {'id' in op.value ? op.value.id : 'profile'}
-                </span>
-                <pre>{JSON.stringify(op.value, null, 2)}</pre>
-              </article>
-            ))}
+          </main>
+        </div>
+        {toast && (
+          <div role="status" className="toast">
+            ✓ {toast}
           </div>
-          <footer>
-            <Button onClick={() => setPreview(undefined)}>Discard</Button>
-            <Button
-              className="primary"
-              disabled={busy || !preview.operations.length}
-              onClick={() =>
+        )}
+        {editor && (
+          <Editor
+            {...editor}
+            existing={(state[editor.collection] as { id: string }[]).some(
+              (r) => r.id === editor.record.id,
+            )}
+            remove={async () => {
+              setState(
+                await api('delete', {
+                  revision: state.revision,
+                  collection: editor.collection,
+                  id: editor.record.id,
+                }),
+              );
+              setToast('Deleted locally; recovery point saved');
+            }}
+            save={save}
+            close={() => setEditor(undefined)}
+            run={run}
+          />
+        )}
+        {attempt && (
+          <Modal title={'Practice: ' + attempt.q.title} close={() => setAttempt(undefined)}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
                 run(async () => {
-                  await save(preview.operations);
-                  setPreview(undefined);
-                })
-              }
+                  await save([
+                    {
+                      kind: 'attempt',
+                      value: {
+                        id: uid(),
+                        questionId: attempt.q.id,
+                        date: attempt.date,
+                        minutes: Number(attempt.minutes),
+                        result: attempt.result,
+                        notes: attempt.notes,
+                        language: attempt.language,
+                      },
+                    },
+                  ]);
+                  setAttempt(undefined);
+                });
+              }}
             >
-              Apply {preview.operations.length} changes
-            </Button>
-          </footer>
-        </Modal>
-      )}
-      {ai && (
-        <AiDialog
-          initial={ai}
-          close={() => setAi(undefined)}
-          run={run}
-          preview={(v) => {
-            setPreview(v);
-            setAi(undefined);
-          }}
-          busy={busy}
-        />
-      )}
-    </div>
+              <div className="form-grid">
+                <Field label="Date">
+                  <input
+                    type="date"
+                    required
+                    value={attempt.date}
+                    onChange={(e) => setAttempt({ ...attempt, date: e.target.value })}
+                  />
+                </Field>
+                <Field label="Minutes">
+                  <input
+                    type="number"
+                    min="1"
+                    max="240"
+                    required
+                    value={attempt.minutes}
+                    onChange={(e) => setAttempt({ ...attempt, minutes: e.target.value })}
+                  />
+                </Field>
+              </div>
+              <Field label="Result (be honest)">
+                <select
+                  value={attempt.result}
+                  onChange={(e) => setAttempt({ ...attempt, result: e.target.value })}
+                >
+                  {['Independent', 'Hinted', 'Failed'].map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Language / SQL dialect">
+                <input
+                  value={attempt.language}
+                  onChange={(e) => setAttempt({ ...attempt, language: e.target.value })}
+                />
+              </Field>
+              <Field label="Invariant, mistake, complexity, next revision">
+                <textarea
+                  value={attempt.notes}
+                  onChange={(e) => setAttempt({ ...attempt, notes: e.target.value })}
+                />
+              </Field>
+              <p className="muted">
+                This records recall, not session hours. Use Quick log to log time and an attempt
+                together; never log that time twice.
+              </p>
+              <footer>
+                <Button onClick={() => setAttempt(undefined)}>Cancel</Button>
+                <button className="primary" disabled={busy}>
+                  Save attempt
+                </button>
+              </footer>
+            </form>
+          </Modal>
+        )}
+        {preview && (
+          <Modal title="Review proposed changes" close={() => setPreview(undefined)}>
+            <p>{preview.summary}</p>
+            {preview.warnings?.map((w, i) => (
+              <p className="callout" key={i}>
+                {w}
+              </p>
+            ))}
+            <p>No changes are saved until you apply. Review facts, time and status carefully.</p>
+            <div className="proposal-list">
+              {preview.operations.map((op, i) => (
+                <article key={i}>
+                  <span className="tag">
+                    {op.kind} · upsert {'id' in op.value ? op.value.id : 'profile'}
+                  </span>
+                  <pre>{JSON.stringify(op.value, null, 2)}</pre>
+                </article>
+              ))}
+            </div>
+            <footer>
+              <Button onClick={() => setPreview(undefined)}>Discard</Button>
+              <Button
+                className="primary"
+                disabled={busy || !preview.operations.length}
+                onClick={() =>
+                  run(async () => {
+                    await save(preview.operations);
+                    setPreview(undefined);
+                  })
+                }
+              >
+                Apply {preview.operations.length} changes
+              </Button>
+            </footer>
+          </Modal>
+        )}
+        {ai && (
+          <AiDialog
+            initial={ai}
+            close={() => setAi(undefined)}
+            run={run}
+            preview={(v) => {
+              setPreview(v);
+              setAi(undefined);
+            }}
+            busy={busy}
+          />
+        )}
+      </div>
+    </RuntimeError.Provider>
   );
 }
 function QuickLog({
@@ -1529,7 +1559,7 @@ function AiDialog({
         Cloud providers receive this text; local Ollama stays on your machine.
       </p>
       <Field label="Request / facts / pasted job description">
-        <textarea rows={10} value={text} onChange={(e) => setText(e.target.value)} />
+        <textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} />
       </Field>
       <label className="check">
         <input type="checkbox" checked={context} onChange={(e) => setContext(e.target.checked)} />

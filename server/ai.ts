@@ -149,7 +149,11 @@ export class Provider {
         .replace(/^```(?:json)?\s*/, '')
         .replace(/\s*```$/, '');
       try {
-        return proposalSchema.parse(JSON.parse(result));
+        const proposal = proposalSchema.parse(JSON.parse(result));
+        if (proposal.operations.some((op) => op.kind === 'profile' || op.kind === 'question')) {
+          throw new Error('AI cannot alter profile facts or the practice catalog.');
+        }
+        return proposal;
       } catch {
         throw new Error(
           'The model response did not match the safe edit schema. No changes were made. Try a smaller, clearer request or use manual editing.',

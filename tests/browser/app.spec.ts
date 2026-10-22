@@ -84,3 +84,64 @@ test('all routes fit desktop and mobile; capture review artifacts', async ({ pag
   }
   expect(failures).toEqual([]);
 });
+
+test('dialog failures stay visible; screenshot upload and mobile navigation work', async ({
+  page,
+}) => {
+  await page.goto('/#Today');
+  await page.getByLabel('What did you work on?').fill('30 min Python practice');
+  await page.getByRole('button', { name: 'Use optional AI' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('checkbox')).not.toBeChecked();
+  await dialog.getByRole('button', { name: 'Generate reviewable proposal' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('No AI provider configured');
+  await page.screenshot({
+    path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'ai-error-dialog.png'),
+  });
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.goto('/#Notes');
+  await page.getByRole('button', { name: '＋ Add note' }).click();
+  await page.getByLabel('Title', { exact: true }).fill('Raster screenshot test');
+  await page.getByLabel('Attach a screenshot', { exact: false }).setInputFiles({
+    name: 'sample.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jXioAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await expect(dialog.getByRole('img')).toBeVisible();
+  await dialog.getByRole('img').scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'note-image-dialog.png'),
+  });
+  await page.getByRole('button', { name: 'Save locally' }).click();
+  await expect(
+    page.getByRole('img', { name: 'Screenshot for Raster screenshot test' }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.getByRole('button', { name: 'Toggle navigation' }).click();
+  await expect(page.getByRole('button', { name: 'Close navigation' })).toBeVisible();
+  await page.screenshot({
+    path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'mobile-menu.png'),
+  });
+  await page.getByRole('button', { name: 'Close navigation' }).click();
+  await expect(page.locator('aside')).not.toBeVisible();
+  await page.goto('/#Settings');
+  await page.getByLabel('Appearance').selectOption('dark');
+  await page.getByRole('button', { name: 'Save profile & recalculate' }).click();
+  await page.goto('/#Today');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.screenshot({
+    path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'mobile-dark-today.png'),
+    fullPage: true,
+  });
+  const external: string[] = [];
+  page.on('request', (r) => {
+    if (!r.url().startsWith(new URL(page.url()).origin)) external.push(r.url());
+  });
+  await page.reload();
+  await expect(page.locator('h1')).toBeVisible();
+  expect(external).toEqual([]);
+});

@@ -156,6 +156,7 @@ test('AI key is memory-only and returned proposals never mutate the store', asyn
   const root = await mkdtemp(path.join(os.tmpdir(), 'career-ai-'));
   const provider = new Provider(root);
   let seen: any;
+  let disallowedKind = false;
   const { createServer } = await import('node:http');
   const mock = createServer((req, res) => {
     let body = '';
@@ -168,20 +169,22 @@ test('AI key is memory-only and returned proposals never mutate the store', asyn
           message: {
             content: JSON.stringify({
               summary: 'A synthetic note',
-              operations: [
-                {
-                  kind: 'note',
-                  value: {
-                    id: 'mock-note',
-                    title: 'Mock',
-                    category: 'Test',
-                    body: 'Synthetic response',
-                    tags: [],
-                    attachments: [],
-                    updatedAt: '2026-10-22',
-                  },
-                },
-              ],
+              operations: disallowedKind
+                ? [{ kind: 'profile', value: initialState().profile }]
+                : [
+                    {
+                      kind: 'note',
+                      value: {
+                        id: 'mock-note',
+                        title: 'Mock',
+                        category: 'Test',
+                        body: 'Synthetic response',
+                        tags: [],
+                        attachments: [],
+                        updatedAt: '2026-10-22',
+                      },
+                    },
+                  ],
             }),
           },
         }),
@@ -206,6 +209,11 @@ test('AI key is memory-only and returned proposals never mutate the store', asyn
     assert.equal(proposal.operations.length, 1);
     assert.equal(state.notes.length, 0);
     assert.ok(!seen.messages[1].content.includes(state.tasks[0].title));
+    disallowedKind = true;
+    await assert.rejects(
+      provider.propose('plan', 'Change my profile', state, false),
+      /safe edit schema/,
+    );
   } finally {
     await new Promise<void>((r) => mock.close(() => r()));
     await rm(root, { recursive: true, force: true });

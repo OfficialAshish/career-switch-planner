@@ -187,14 +187,14 @@ export async function workbook(state: State) {
     }
   }
   for (const s of w.worksheets) {
-    s.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+    s.getRow(1).font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
     s.getRow(1).height = 32;
     s.getRow(1).eachCell(
       (c) => (c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF245E7A' } }),
     );
     s.eachRow((r, i) => {
       if (i > 1) {
-        r.height = s.name === 'Start here' ? 58 : 48;
+        r.height = s.name === 'Start here' ? 58 : s.name === 'Dashboard' ? 28 : 48;
         r.eachCell((c) => {
           c.font = { name: 'Calibri', size: 11, color: { argb: 'FF203544' } };
           c.alignment = { vertical: 'top', wrapText: true };
@@ -209,8 +209,10 @@ export async function workbook(state: State) {
       orientation: 'landscape',
       fitToPage: true,
       fitToWidth: 1,
-      fitToHeight: 0,
+      fitToHeight: ['Start here', 'Dashboard'].includes(s.name) ? 1 : 0,
+      printTitlesRow: '1:1',
     };
+    s.pageSetup.printArea = `A1:${s.getColumn(s.columnCount).letter}${s.rowCount}`;
   }
   return Buffer.from(await w.xlsx.writeBuffer());
 }

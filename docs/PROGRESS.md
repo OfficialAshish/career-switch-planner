@@ -1,45 +1,43 @@
 # Engineering progress
 
-## Next step
+## Status
 
-Complete browser visual review, documentation, clean-install verification and cross-platform CI.
+Working local-first v0.1 application implemented, visually reviewed and tested. Final handoff verification is in progress; see the latest GitHub checks for the exact revision. No calendar deadline, salary promise or guaranteed placement is built into the plan.
 
-## Baseline
-
-- Existing repository: one initial README commit, `ec86791`; no application or unrelated changes.
 - Repository: https://github.com/OfficialAshish/career-switch-planner
-- Branch: `main` (new application repository, existing initial commit preserved).
-- Public source contains generic templates only. Personal archive/resumes and credentials stay outside this repository.
+- Branch: `main`; initial README commit `ec86791` preserved.
+- Public source contains generic templates only. Personal archives, starter workspaces and credentials are outside the repository.
 
-## Work packages
+## Completed acceptance
 
-| Package                | Acceptance                                                                                                      | Status                            |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| Bootstrap              | Reproducible package/lockfile; remote recovery checkpoint                                                       | done                              |
-| Domain and persistence | Validated data, atomic saves, backups, revision conflicts, dynamic planning tests                               | done                              |
-| Local API/security     | Loopback only, Host/Origin/CSRF, bounded input, private credentials, safe attachments                           | implemented; final review pending |
-| UI                     | Responsive React workspace; quick logging, practice, notes, plan, projects, resumes, interviews, jobs, research | implemented; final review pending |
-| AI and research        | Optional bounded proposals; explicit review; local/cloud providers; pasted JD/source research                   | implemented; final review pending |
-| Portability            | JSON backup including images; Excel export/import with documented scope                                         | implemented; final review pending |
-| Launch/setup           | Windows BAT plus shell launcher; clear prerequisites and offline behavior                                       | implemented; final review pending |
-| Verification/handoff   | Tests/build/browser checks, docs, pushed commits, confirmed remote SHA                                          | implemented; final review pending |
+| Package          | Evidence                                                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dynamic planning | Editable capacity/scope, prerequisite order, time logged once, remaining estimates, forecast ranges and pace calibration; domain tests            |
+| Persistence      | Strict schema/reference validation, atomic saves, revision conflicts, single-process lock, 40 recovery points; API/store tests                    |
+| Local security   | Loopback binding, Host/Origin/CSRF checks, bounded imports/provider responses, private network source-reader restrictions; synthetic tests        |
+| Interface        | Ten React routes; quick capture, practice/recall, notes/screenshots, projects/gates, claims/resumes, interviews, applications, research, settings |
+| Optional AI      | Disabled by default; Ollama/compatible providers, memory-only key, context opt-in, review before applying, no shell/delete/profile/catalog edits  |
+| Files            | JSON/image backup and restore preview; XLSX plain-value upserts; DOCX/LaTeX/print resume; automated exchange tests                                |
+| Setup            | Windows BAT and shell launchers; initial dependency install/build, then local server; isolated launcher smoke tests                               |
+| Open source      | MIT license, README, contribution/security guides, architecture, data, AI, recovery, privacy, decisions and verification documentation            |
 
-## Recovery
+## Verification ledger
 
-Inspect working tree before syncing. Read this file, DECISIONS, architecture and known limitations.
-Never overwrite unrelated work or commit `data/`, `.env`, credentials or personal documents.
-Commits are pushed after each complete logical checkpoint. Record failures truthfully.
+- Linux: Node 24.22.1, npm 11.19.1, system Chromium.
+- `npm run check`: client/server type checks, **13 tests**, production build pass.
+- `npm run test:e2e`: **3 browser tests** pass, including all ten routes at 1440px/390px, capture/reload, practice, resume modes, visible dialog errors, screenshot uploads, mobile navigation and dark theme.
+- Manual visual inspection: each route at desktop/mobile, AI error, image editor, navigation and dark mobile states. Fixed missing icon glyphs, modal footer/error visibility and route scroll retention found during review.
+- `node scripts/smoke-launcher.mjs`: Linux shell launcher builds and serves an isolated synthetic workspace.
+- Fresh public clone at `c30ba61`: clean install, formatting, type/test/build and browser checks passed; a final-revision clean clone check follows this checkpoint.
+- `npm audit`: zero reported vulnerabilities in the local full dependency snapshot; registry audit is not a security guarantee.
+- GitHub Actions run **39850892067**, revision **4242d625**: **Ubuntu and Windows passed**, including launcher smoke tests and Chromium journeys. Later release-polish commits require their own checks.
+- Synthetic XLSX audit: valid package, 13 sheets, 8 formulas, no external links, zero issues. ISO date strings intentionally retain canonical import format (reported as two text-date warnings). Dashboard rendered and reviewed; print layout refined afterward.
+- `npm run test:exports` creates repeatable synthetic Office fixtures under ignored `test-results/exports`; no private workspace is used.
 
-## Evidence
+## Known limits
 
-- Node v24.22.1, npm 11.19.1 available in Linux build environment.
-- Package registry and GitHub reachable.
-- Windows launch cannot be executed natively in this Linux environment; static review and Windows CI will be distinguished from local execution.
+Native interactive Windows double-click/browser UX, actual Google Sheets conversion, real Ollama/paid-provider quality, all external question/job URLs, LaTeX compilation and formal accessibility/security audits were not performed. Source reader is an explicit public-page fetcher, not autonomous web search. See `VERIFICATION.md` and `ROADMAP.md`.
 
-## Application checkpoint
+## Recovery and continuation
 
-- React workspace, local API, Excel exchange, JSON/image backups, DOCX/LaTeX resumes and launchers implemented.
-- `npm run check`: type checks, 12 domain/API/export tests and production build pass.
-- Browser: 2 automated tests pass, covering quick log, persistent reload, notes, practice, capacity, future resume and all 10 routes at desktop/mobile.
-- `npm audit --omit=dev`: 0 vulnerabilities after uuid 11.1.1 override; ExcelJS v4 use verified by round-trip export tests.
-- Visual review still in progress; external real-model/provider, Google import and native Windows execution not yet verified.
+Inspect the working tree before syncing. Read this file, `DECISIONS.md`, `ARCHITECTURE.md` and known limitations. Never overwrite unrelated work or commit `data/`, `.env`, credentials or personal documents. Completed checkpoints are pushed to `main`; Git history and the private Notion engineering tracker retain recovery context. No access token is part of source or Git remote URLs.

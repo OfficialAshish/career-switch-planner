@@ -27,7 +27,7 @@ Cloud providers receive this content under their own terms. There is no telemetr
 
 Request → bounded provider call → JSON parsing → strict allowed operation schema → dependency/reference validation → displayed full records → explicit Apply → expected revision check → backup and atomic save.
 
-Maximum 30 AI operations, 20,000 input characters, 1 MB provider response and 60 seconds. Only one provider request at a time. No delete tool, shell, arbitrary file path, database access or browsing tool. A proposal may still be factually wrong: validation prevents invalid structure, not hallucinations. Review replacement records carefully; fields are complete upserts, not partial patches. Evidence statuses are your responsibility.
+Maximum 30 AI operations, 20,000 input characters, 1 MB provider response and 60 seconds. Only one provider request at a time. AI proposals cannot modify profile facts or the practice catalog. No delete tool, shell, arbitrary file path, database access or browsing tool. A proposal may still be factually wrong: validation prevents invalid structure, not hallucinations. Review replacement records carefully; fields are complete upserts, not partial patches. Evidence statuses are your responsibility.
 
 ## Built-in modes
 

@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm test && npm run build",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:exports": "tsx scripts/export-fixture.ts"
   },
   "dependencies": {
     "cheerio": "1.2.0",

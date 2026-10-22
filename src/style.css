@@ -762,6 +762,7 @@ pre {
   margin: 20px 0;
 }
 :root[data-theme='dark'] {
+  color-scheme: dark;
   --canvas: #171c20;
   --surface: #20272c;
   --soft: #283239;
@@ -802,6 +803,7 @@ pre {
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']):not([data-theme='dark']) {
+    color-scheme: dark;
     --canvas: #171c20;
     --surface: #20272c;
     --soft: #283239;
@@ -1175,4 +1177,31 @@ td small {
     color: var(--muted);
     font-size: 14px;
   }
+}
+.close-nav {
+  position: absolute;
+  right: 8px;
+  top: 5px;
+  min-height: 36px;
+  padding: 5px;
+}
+@media (max-width: 700px) {
+  aside .brand {
+    margin-top: 12px;
+  }
+}
+dialog header {
+  position: sticky;
+  top: -25px;
+  background: var(--surface);
+  z-index: 2;
+  padding: 12px 0;
+}
+dialog footer {
+  position: sticky;
+  bottom: -25px;
+  background: var(--surface);
+  z-index: 2;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
 }
