@@ -1,12 +1,114 @@
 # Career Switch Planner
 
-A local-first career workspace: flexible planning, quick tracking, practice, notes,
-resume evidence and optional AI help. No login. No compulsory cloud. Your data stays
-in an ignored folder beside the source.
+**Your next career move, at your own pace.** A private-by-default React workspace for learning outcomes, coding practice, notes, project evidence, resumes, interviews and job applications. Runs on your computer. No account, GitHub token, cloud database or subscription required.
 
-**Build in progress.** Follow [engineering progress](docs/PROGRESS.md) for verified
-checkpoints. Setup, security, exports and known limitations will be documented with
-the working implementation.
+> This is a local single-user application, **not** a website to deploy to GitHub Pages or a public Render instance. Keep it on loopback. Career forecasts are estimates—not placement, salary or joining-date guarantees.
 
-MIT-licensed application code. Your personal data remains yours; never publish the
-`data/` folder or personal backup files.
+## Start in a minute
+
+Install **[Node.js 24 LTS or newer](https://nodejs.org/)** and download/clone this repository:
+
+```sh
+git clone https://github.com/OfficialAshish/career-switch-planner.git
+cd career-switch-planner
+```
+
+- **Windows:** double-click **`start.bat`**. It checks Node, installs locked dependencies when needed, builds the app and opens the browser after the server is ready. Keep the terminal window open.
+- **macOS / Linux:** run **`bash start.sh`**, then open **http://127.0.0.1:4317**.
+- **Manual:** `npm ci`, `npm run build`, `npm start`.
+
+The **first installation requires internet**. After dependencies are installed, building, tracking, planning, editing, exports and backups work offline. Optional cloud AI and source retrieval need internet. Local Ollama needs its software and model downloaded separately.
+
+All personal data lives in the ignored **`data/`** folder inside your clone. The public repository contains generic templates and a question catalog—**not anyone’s resume or private history**. Stop the server with Ctrl+C before moving the folder.
+
+## What you can do
+
+| Workspace           | Purpose                                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------------------------- |
+| Today               | One-line quick capture, session time, next outcome, revision queue                                        |
+| Plan                | Editable competencies, prerequisites and estimates; capacity-limited weekly queue; pace-adjusted forecast |
+| Practice            | 150 categorized DSA + 50 SQL links, difficulty filters, attempts and spaced recall                        |
+| Notes               | Categories, tags, searchable explanations and local raster screenshots                                    |
+| Projects & evidence | Project progress and explicit evidence-backed readiness gates                                             |
+| Resume              | Current verified claims versus labeled future-state draft; PDF print, DOCX and LaTeX exports              |
+| Interview           | Editable truthful stories, follow-ups, five professional unknown-answer styles and mock structure         |
+| Applications        | JD, role/location eligibility, stage, notes and next action                                               |
+| Research            | Dated sources, pasted evidence and guarded public-page retrieval                                          |
+| Settings            | Weekly capacity, optional goal/notice, appearance, AI, imports/exports and recovery points                |
+
+### Dynamic, not deadline-driven
+
+Start at **19 hours/week** or choose your actual capacity. A 3-hour day followed by a 0-hour day is valid. Tasks have editable estimates; completing them and logging linked time updates the forecast. After five completed timed outcomes, the planner uses a bounded median observed pace. Faster progress can bring the estimate forward; blocked work and missing evidence remain visible. An optional goal date never silently cuts the syllabus. There is no automatic resignation recommendation.
+
+### Less data entry
+
+Write: `45 min DSA — LC 3 solved without hints; sliding window clicked.`
+
+The **offline parser** proposes a session and a matching practice attempt. Review the proposed values, then apply. It never invents missing duration or success. Select an outcome if you want that time to inform its estimate. Corrections are editable; manual deletion creates a recovery point and rejects broken references. Quick capture supports one duration total and one question per entry; use separate entries for separate questions.
+
+### Optional AI, under your control
+
+Settings → choose **local Ollama** or an **OpenAI-compatible API**, endpoint and model. For Ollama, a typical endpoint is `http://127.0.0.1:11434`; compatible APIs usually need their documented `/v1` base URL. A model capable of structured JSON is recommended.
+
+AI can propose logs, JD-specific tasks, resume wording, interview drills and summaries of **supplied** research. Every proposal is schema-validated and explicitly reviewed before saving. No shell commands, arbitrary files, automatic browsing or silent changes. Workspace context is **off by default on each request**. Provider keys are memory-only or supplied through your server environment, never returned in the UI or exported. See [AI setup and privacy](docs/AI.md).
+
+### Portable, not locked in
+
+- **Full JSON backup:** workspace + referenced images. Restore shows a replacement preview and keeps the previous revision first.
+- **Excel tracker:** editable data sheets plus a formatted dashboard. Upload to Google Drive → Open with Google Sheets → Save as Google Sheets. Each friend keeps a separate file and shares a viewer/commenter link. No automatic cross-file sync.
+- **Excel import:** preview changed plain-value rows from this app’s export; upsert by stable ID, no deletion. Images, provider settings and the profile do not import through Excel. Legacy tracker columns are not silently guessed. See [data format and spreadsheet scope](docs/DATA.md).
+- **Resume:** browser print/save PDF, editable DOCX, LaTeX source. Verify all personal and future-state claims before sending.
+
+## First 15 minutes
+
+1. Enter your profile, actual weekly capacity, target role and contractual notice in Settings. An ambitious date is optional.
+2. Review the generic outcomes. Edit estimates and prerequisites to match your baseline; don’t claim completed work merely to make a forecast earlier.
+3. Add existing projects and evidence gaps. Keep employer/client material out.
+4. Record one real session and one honest practice result.
+5. Add a few resume claims. Mark Verified only when you can defend the exact wording. Future work stays Planned/Working.
+6. Export a full backup; keep a copy outside this computer periodically.
+
+## Development
+
+```sh
+npm ci
+npm run check          # TypeScript, domain/API/export tests, production build
+npm run format:check
+npx playwright install chromium
+npm run test:e2e       # starts an isolated test server with synthetic data
+npm run dev            # build frontend once + watch server TS; rebuild for UI edits
+```
+
+If a system Chromium is already installed, set `CHROMIUM_PATH` for browser tests. Test screenshots and reports are ignored. CI runs build/tests/browser checks on Linux and Windows; it does **not** deploy anything. Current recorded evidence and limitations: [verification](docs/VERIFICATION.md).
+
+### Configuration
+
+| Variable          | Default | Purpose                                                      |
+| ----------------- | ------- | ------------------------------------------------------------ |
+| `PORT`            | `4317`  | Local port, 1024–65535; server always binds 127.0.0.1        |
+| `CAREER_DATA_DIR` | `data`  | Explicit private data-folder override                        |
+| `OPENAI_API_KEY`  | unset   | Optional compatible-provider credential, read only by server |
+
+`.env.example` documents names only; `.env` is **not automatically loaded**. Use your shell’s environment. Never commit real keys. Provider endpoint/model are saved under your private data folder; the key entered in the app is not persisted.
+
+## Documentation
+
+- [Architecture and trust boundaries](docs/ARCHITECTURE.md)
+- [User guide and weekly workflow](docs/USER-GUIDE.md)
+- [AI setup, prompts and data sharing](docs/AI.md)
+- [Data formats, Excel and backups](docs/DATA.md)
+- [Security policy](SECURITY.md) · [Privacy](docs/PRIVACY.md)
+- [Recovery and troubleshooting](docs/RECOVERY.md)
+- [Verification and honest limitations](docs/VERIFICATION.md)
+- [Progress / next step](docs/PROGRESS.md) · [Decisions](docs/DECISIONS.md)
+- [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
+
+## Scope and limitations
+
+This is a local productivity tool, not a recruiter, autonomous career agent or audited financial/legal adviser. No cloud sync, multi-user accounts, native mobile app, PDF resume ingestion, live salary feed or universal job scraper. Some sources block retrieval; paste an excerpt instead. Workbook exchange is intentionally narrower than a full backup. Data is **not encrypted at rest**; rely on your OS account and disk encryption. Local software with access to your files is outside the server’s isolation boundary.
+
+The catalog links to LeetCode; access and premium requirements can change. Problem titles are navigational references, not copied solutions. All projects and metrics must be your own defensible work.
+
+## License
+
+[MIT](LICENSE). Optional model/provider terms and third-party content licenses still apply. Contributions welcome; use synthetic examples only.

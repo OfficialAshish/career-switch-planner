@@ -1,0 +1,8 @@
+node_modules
+dist
+data
+.local
+playwright-report
+test-results
+package-lock.json
+seed/questions.json

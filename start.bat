@@ -13,16 +13,12 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-if not exist node_modules (
-  echo First run needs internet to install locked dependencies.
-  call npm ci
-  if errorlevel 1 goto failed
-)
+node scripts/install.mjs
+if errorlevel 1 goto failed
 call npm run build
 if errorlevel 1 goto failed
 if not defined PORT set PORT=4317
-start "" "http://127.0.0.1:%PORT%"
-call npm start
+node scripts/launch.mjs
 if errorlevel 1 goto failed
 exit /b 0
 :failed

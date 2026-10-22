@@ -23,7 +23,10 @@ export const modes = {
   log: 'Convert the user log into the fewest truthful sessions/attempts/notes. Fill routine fields, but never invent duration or independent success.',
   plan: 'Propose competency-based, prerequisite-aware tasks based on target role, baseline, capacity and current evidence. Do not reset progress.',
   jd: 'Analyze the pasted JD against evidenced skills. Propose targeted tasks and a note separating requirements, matches, gaps and interview questions.',
-  research: 'Summarize supplied sources with URLs and retrieval dates, contradictions and unanswered questions. No unsupported market statistics.',
-  resume: 'Improve supplied resume claims for clarity and relevance, preserving facts and planned/working/verified boundaries. Avoid invented metrics.',
-  interview: 'Draft a truthful interview story and likely follow-ups. Unknown personal details stay explicit placeholders. Help clear, direct answers.',
+  research:
+    'Summarize supplied sources with URLs and retrieval dates, contradictions and unanswered questions. No unsupported market statistics.',
+  resume:
+    'Improve supplied resume claims for clarity and relevance, preserving facts and planned/working/verified boundaries. Avoid invented metrics.',
+  interview:
+    'Draft a truthful interview story and likely follow-ups. Unknown personal details stay explicit placeholders. Help clear, direct answers.',
 } as const;
