@@ -5,4 +5,4 @@ command -v node >/dev/null || { echo 'Install Node.js 24+ from https://nodejs.or
 node -e 'if(Number(process.versions.node.split(".")[0])<24){console.error("Node.js 24+ required");process.exit(1)}'
 node scripts/install.mjs
 npm run build
-npm start
+exec node dist/server/server/index.js

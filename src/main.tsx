@@ -1808,9 +1808,12 @@ function Settings({
                     confirm('Replace this workspace? A local recovery backup will be saved first.')
                   )
                     run(async () => {
-                      setState(
-                        await api('import-backup/apply', { revision: state.revision, backup }),
-                      );
+                      const restored = await api<State>('import-backup/apply', {
+                        revision: state.revision,
+                        backup,
+                      });
+                      setProfile(restored.profile);
+                      setState(restored);
                       setBackup(undefined);
                     });
                 }}
@@ -1838,7 +1841,12 @@ function Settings({
               onClick={() => {
                 if (confirm('Restore this revision? Current state will be backed up first.'))
                   run(async () => {
-                    setState(await api('restore', { revision: state.revision, file: b }));
+                    const restored = await api<State>('restore', {
+                      revision: state.revision,
+                      file: b,
+                    });
+                    setProfile(restored.profile);
+                    setState(restored);
                     setBackups(await api('backups'));
                   });
               }}

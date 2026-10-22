@@ -13,7 +13,7 @@ child.stdout.on('data', (chunk) => {
   process.stdout.write(chunk);
   if (!opened && chunk.toString().includes('is ready:')) {
     opened = true;
-    if (process.platform === 'win32') {
+    if (process.platform === 'win32' && process.env.NO_BROWSER !== '1') {
       const browser = spawn('cmd.exe', ['/d', '/c', 'start', '', `http://127.0.0.1:${port}`], {
         stdio: 'ignore',
       });
