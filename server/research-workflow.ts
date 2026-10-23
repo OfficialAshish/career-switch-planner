@@ -213,7 +213,13 @@ export class ResearchWorkflow {
     };
     this.runs.set(run.id, run);
     this.active = run.id;
-    await this.persist(run);
+    try {
+      await this.persist(run);
+    } catch (e) {
+      this.active = '';
+      run.status = 'failed';
+      throw e;
+    }
     void this.execute(run, structuredClone(this.store.state)).catch(() => {
       run.status = 'failed';
       run.error =
@@ -236,7 +242,13 @@ export class ResearchWorkflow {
     run.baseRevision = this.store.state.revision;
     this.cancelled.delete(id);
     this.active = id;
-    await this.persist(run);
+    try {
+      await this.persist(run);
+    } catch (e) {
+      this.active = '';
+      run.status = 'failed';
+      throw e;
+    }
     void this.execute(run, structuredClone(this.store.state)).catch(() => {
       run.status = 'failed';
       run.error =
@@ -378,6 +390,8 @@ export class ResearchWorkflow {
     }
   }
   async apply(id: string, revision: number) {
+    if (this.active)
+      throw new Error('Wait for the current workflow to finish saving before applying.');
     const run = await this.get(id);
     if (run.status !== 'ready') throw new Error('Only a ready, unapplied plan can be applied.');
     if (revision !== this.store.state.revision || revision !== run.baseRevision)

@@ -147,6 +147,7 @@ export class LatexCompiler {
       // A local native compiler, NOT an OS sandbox. Only explicitly trusted owner-authored sources may be compiled.
       const env: NodeJS.ProcessEnv = {
         TECTONIC_UNTRUSTED_MODE: '1',
+        TECTONIC_CACHE_DIR: path.join(this.root, 'tex-cache', 'Tectonic'),
         XDG_CACHE_HOME: path.join(this.root, 'tex-cache'),
         HOME: temp,
         USERPROFILE: temp,
@@ -157,6 +158,17 @@ export class LatexCompiler {
       };
       for (const key of ['PATH', 'SystemRoot', 'WINDIR', 'FONTCONFIG_PATH'])
         if (process.env[key]) env[key] = process.env[key];
+      // Windows Known Folder APIs need the real OS profile paths; package cache remains explicit.
+      if (process.platform === 'win32')
+        for (const key of [
+          'USERPROFILE',
+          'APPDATA',
+          'LOCALAPPDATA',
+          'HOMEDRIVE',
+          'HOMEPATH',
+          'ProgramData',
+        ])
+          if (process.env[key]) env[key] = process.env[key];
       const log = await execute(
         this.binary,
         [
