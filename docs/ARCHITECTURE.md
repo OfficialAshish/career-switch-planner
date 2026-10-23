@@ -50,6 +50,10 @@ Atomic rename does not guarantee survival of every hardware/power/filesystem fai
 
 ## Trust boundaries
 
-No login because there is no network-user model. Browser origin and loopback safeguards reduce web-origin attacks, not attacks by another local process or a compromised browser extension. Personal data is plain local JSON and images. Source/JD/model text is untrusted. It never becomes HTML, code, shell arguments or raw database queries. AI has schema-limited proposals only, always reviewed.
+No login because there is no network-user model. Browser origin and loopback safeguards reduce web-origin attacks, not attacks by another local process or a compromised browser extension. Personal data is plain local JSON and images. Source/JD/model text is untrusted. It never becomes executable HTML, shell arguments or raw database queries. Exception: a deliberately imported, owner-reviewed LaTeX source can be passed unchanged to the optional native compiler after explicit trust consent; that boundary is not an OS sandbox. AI has schema-limited proposals only, always reviewed.
 
 Proposed future improvements live in ROADMAP, not in this diagram as if already built.
+
+## v0.2 components
+
+`shared/latex-template.ts` generates clean generic templates; `src/LatexStudio.tsx` owns source/PDF editing, while `server/latex.ts` installs and invokes the optional compiler. `shared/research-contract.ts` defines durable run records; `server/research-workflow.ts` orchestrates bounded query/search/read/synthesis and reviewed atomic application. `server/research.ts` handles DNS-pinned public retrieval/search adapters; `server/network.ts` provides bounded response reads. Model output never becomes a shell tool or a verified achievement.

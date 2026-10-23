@@ -33,6 +33,6 @@ A PDF alone is not editable LaTeX. This app does not claim universal PDF-to-LaTe
 
 ## Security boundary
 
-Tectonic runs with `--untrusted`, shell escape disabled, a private temporary working directory, a minimal environment without provider keys, bounded output and a timeout. **This is not an OS sandbox.** A native compiler is a larger attack surface; compile only source you have reviewed and trust. Do not feed unreviewed internet/LLM LaTeX to it. The trust checkbox resets when switching/importing documents.
+Tectonic runs with `--untrusted`, shell escape disabled, a private temporary working directory, an explicit project cache and a minimal environment without provider keys (Windows standard profile paths are retained for native directory lookup), bounded output and a timeout. **This is not an OS sandbox.** A native compiler is a larger attack surface; compile only source you have reviewed and trust. Do not feed unreviewed internet/LLM LaTeX to it. The trust checkbox resets when switching/importing documents.
 
 “Network off” means Tectonic's `--only-cached` mode, not a system firewall. Source is not uploaded to a cloud compiler, but an enabled package fetch contacts upstream bundle servers. Use OS sandboxing/network controls if you need stronger isolation.

@@ -164,6 +164,21 @@ test('AI key is memory-only and returned proposals never mutate the store', asyn
     req.on('end', () => {
       seen = JSON.parse(body);
       res.setHeader('Content-Type', 'application/json');
+      if (seen.messages[0].content.includes('public web search queries')) {
+        res.end(
+          JSON.stringify({
+            message: {
+              content: JSON.stringify({
+                queries: [
+                  'urban planner professional requirements',
+                  'planning policy assessment guidance',
+                ],
+              }),
+            },
+          }),
+        );
+        return;
+      }
       res.end(
         JSON.stringify({
           message: {
@@ -204,11 +219,19 @@ test('AI key is memory-only and returned proposals never mutate the store', asyn
       !(await readFile(path.join(root, 'provider.json'), 'utf8')).includes('synthetic-test-key'),
     );
     assert.ok(!JSON.stringify(provider.info()).includes('synthetic-test-key'));
+    const queries = await provider.queries(
+      JSON.stringify({ goal: 'Urban planner', location: 'India' }),
+    );
+    assert.equal(queries.queries.length, 2);
+    assert.match(seen.messages[0].content, /ANY profession/);
     const state = initialState();
     const proposal = await provider.propose('log', '30 min Python', state, false);
     assert.equal(proposal.operations.length, 1);
     assert.equal(state.notes.length, 0);
     assert.ok(!seen.messages[1].content.includes(state.tasks[0].title));
+    await provider.propose('career', 'A role-specific plan from fetched excerpts', state, false);
+    assert.equal(seen.options.num_predict, 8192);
+    assert.equal(seen.options.num_ctx, 32768);
     disallowedKind = true;
     await assert.rejects(
       provider.propose('plan', 'Change my profile', state, false),

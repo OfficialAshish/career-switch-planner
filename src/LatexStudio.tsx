@@ -139,8 +139,10 @@ export function LatexStudio({ state, onState }: { state: State; onState: (s: Sta
         setLog(result.log);
       }
     } catch (e: any) {
-      failedSource.current = source;
-      setError(e.message);
+      if (seq === sequence.current) {
+        failedSource.current = source;
+        setError(e.message);
+      }
     } finally {
       setBusy('');
     }

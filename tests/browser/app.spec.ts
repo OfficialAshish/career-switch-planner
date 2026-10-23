@@ -189,11 +189,13 @@ test('LaTeX studio preserves imported source, autosaves and renders downloadable
   await page.getByRole('link', { name: 'Download PDF', exact: true }).click();
   const download = await downloadPromise;
   expect(await fs.readFile((await download.path())!)).toEqual(bytes);
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'latex-studio-desktop.png'),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 1000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'latex-studio-mobile.png'),
     fullPage: true,
@@ -225,7 +227,7 @@ test('research planner requires consent and supports saved retry/review flow', a
   let applied = false;
   const run = {
     id: '55555555-5555-4555-8555-555555555555',
-    input: { goal: 'Urban planner', replaceStarter: true },
+    input: { goal: 'Urban planner', weeklyHours: 12, replaceStarter: true },
     baseRevision: 0,
     status: 'failed',
     stage: 'Saved evidence ready for retry',
@@ -287,6 +289,7 @@ test('research planner requires consent and supports saved retry/review flow', a
   await page.getByRole('button', { name: 'Retry with saved evidence' }).click();
   await expect(page.getByText('Role-specific portfolio and policy plan')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Apply reviewed research plan' })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: path.join(
       process.env.ARTIFACT_DIR || 'test-results/visual',
@@ -295,6 +298,7 @@ test('research planner requires consent and supports saved retry/review flow', a
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 1000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: path.join(
       process.env.ARTIFACT_DIR || 'test-results/visual',

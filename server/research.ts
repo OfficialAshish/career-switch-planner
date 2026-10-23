@@ -32,7 +32,16 @@ export async function fetchPublicHtml(
     ['.local', '.localhost', '.internal', '.test'].some((s) => host.endsWith(s))
   )
     throw new Error('Local and internal research addresses are blocked.');
-  const addresses = await dns.lookup(host, { all: true });
+  let dnsTimer: ReturnType<typeof setTimeout> | undefined;
+  const addresses = await Promise.race([
+    dns.lookup(host, { all: true }),
+    new Promise<never>((_resolve, reject) => {
+      dnsTimer = setTimeout(
+        () => reject(new Error('Source DNS lookup timed out. Retry later.')),
+        5000,
+      );
+    }),
+  ]).finally(() => clearTimeout(dnsTimer));
   if (!addresses.length || addresses.some((a) => a.family === 4 && !publicIPv4(a.address)))
     throw new Error('Private/reserved destinations are blocked.');
   const chosen = addresses.find((a) => a.family === 4 && publicIPv4(a.address));
@@ -42,7 +51,7 @@ export async function fetchPublicHtml(
       u,
       {
         headers: {
-          'User-Agent': 'CareerSwitchPlanner/0.1 (user-requested source reader)',
+          'User-Agent': 'CareerSwitchPlanner/0.2 (user-requested source reader)',
           Accept: 'text/html,text/plain;q=0.9',
           'Accept-Encoding': 'identity',
         },
@@ -127,10 +136,12 @@ export async function searchWeb(query: string, key?: string): Promise<SearchResu
         redirect: 'error',
       },
     );
-    if (!response.ok)
+    if (!response.ok) {
+      await response.body?.cancel();
       throw new Error(
         `Search provider HTTP ${response.status}. Check the optional Brave search key.`,
       );
+    }
     const raw = (await boundedBody(response, 500000)).toString('utf8');
     if (raw.length > 500000) throw new Error('Search response too large.');
     const data = JSON.parse(raw);

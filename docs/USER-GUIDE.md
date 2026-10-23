@@ -36,8 +36,12 @@ When unsure: say what you do and don’t know, ask one useful clarifying questio
 
 Record India eligibility and time zones, employee/EOR/contractor arrangement, actual engineering ownership, on-call/workload, mentor/review support, salary fixed versus variable/CTC, notice/buyout and next action. A foreign logo is not evidence of healthy workload or global remote eligibility.
 
-Save primary source URL/date/excerpt and limitations. A vacancy can close; a search snippet can be stale. Generic salary numbers are not a personal entitlement or guaranteed offer. AI research is a synthesis of supplied sources, not live browsing.
+Save primary source URL/date/excerpt and limitations. A vacancy can close; a search snippet can be stale. Generic salary numbers are not a personal entitlement or guaranteed offer. The single-proposal AI button synthesizes supplied sources. For live bounded search, role-specific planning and saved retries, use Research → Research & generate plan; see [AI workflow](AI.md).
 
 ## Buddy use
 
 Each person owns their local workspace. Export sanitized Excel, import to Google Sheets and exchange viewer/commenter links. Read each other’s notes and discuss one useful takeaway weekly. No auto-sync or shared credentials. Images are best kept in the app/full backup; Google-specific objects do not import as local attachments.
+
+## Editing a real resume source
+
+Resume → LaTeX editor & PDF → Import original .tex. Review source, install the optional compiler, enable first-use package downloads, compile, then enable live PDF if desired. Clean PDF output has no app watermark. Source and structured claims remain independent. Full setup and trust requirements: [LaTeX studio](LATEX.md).
