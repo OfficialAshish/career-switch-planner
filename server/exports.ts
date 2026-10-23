@@ -93,7 +93,11 @@ function textParts(value: string) {
   for (let at = 0; at < value.length;) {
     let end = Math.min(value.length, at + 30000);
     const code = value.charCodeAt(end - 1);
-    if (end < value.length && code >= 0xd800 && code <= 0xdbff) end--;
+    if (
+      end < value.length &&
+      ((code >= 0xd800 && code <= 0xdbff) || (value[end - 1] === '\r' && value[end] === '\n'))
+    )
+      end--;
     parts.push(value.slice(at, end));
     at = end;
   }

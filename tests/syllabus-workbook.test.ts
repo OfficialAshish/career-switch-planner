@@ -293,3 +293,27 @@ test('weekly dashboard uses numeric spreadsheet dates and source preserves CRLF 
   assert.equal(result.state!.resumeDocuments[0].source, state.resumeDocuments[0].source);
   assert.equal(result.changes.length, 0);
 });
+
+test('CRLF chunk boundaries and edited source/prompts preserve original newline convention', async () => {
+  const state = initialState();
+  const source = 'a'.repeat(29999) + '\r\n' + 'b'.repeat(29999) + '\r\n';
+  state.resumeDocuments.push({ id: 'long-crlf', title: 'Long CRLF', source, updatedAt: 'now' });
+  state.promptTemplates.push({
+    id: 'crlf-prompt',
+    title: 'Prompt',
+    body: 'first\r\nsecond\r\n',
+    updatedAt: 'now',
+  });
+  state.profile.summary = 'Summary\r\nline two';
+  const w = await book(state);
+  let result = await reconcileWorkbook(await bytes(w), state);
+  assert.equal(result.changes.length, 0);
+  assert.equal(result.state!.resumeDocuments[0].source, source);
+  assert.equal(result.state!.profile.summary, state.profile.summary);
+  w.getWorksheet('Resume source')!.getCell('D2').value = 'edited\n';
+  w.getWorksheet('Prompts')!.getCell('D2').value = 'edited prompt\n';
+  result = await reconcileWorkbook(await bytes(w), state);
+  assert.ok(result.state!.resumeDocuments[0].source.startsWith('edited\r\n'));
+  assert.equal(result.state!.promptTemplates[0].body, 'edited prompt\r\n');
+  assert.ok(result.warnings.some((w) => w.includes('CRLF')));
+});

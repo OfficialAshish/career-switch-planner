@@ -11,7 +11,7 @@
 
 ## Local verification
 
-- Node 24 / Linux: formatting, client/server TypeScript, **34 domain/API/export/protocol tests**, production build, **7 browser journeys**, shell launcher smoke and production dependency audit pass (zero vulnerabilities at the registry snapshot).
+- Node 24 / Linux: formatting, client/server TypeScript, **35 domain/API/export/protocol tests**, production build, **7 browser journeys**, shell launcher smoke and production dependency audit pass (zero vulnerabilities at the registry snapshot).
 - Browser suite includes desktop/mobile overflow capture of all **11 routes**, topic editing/persistence, saved prompts, external Markdown import/apply, workbook editing/import/apply and short-screen sidebar scrolling.
 - Workbook tests include full-source Unicode chunks, arrays, profile/resources/prompts, app-only edits, overlapping conflicts, same-ID safety, deletions/references, formula rejection, ZIP guards and full cross-workspace transfer with image remapping and explicit confirmation.
 - LibreOffice recalculation/resave → app import: **zero unintended changes**, 33 topics retained, formulas and hidden portable baseline retained. Direct Microsoft Excel / Google Sheets round-trip is **not verified**.

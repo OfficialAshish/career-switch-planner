@@ -60,3 +60,5 @@ CI results and final remote SHA must be checked on the repository, not inferred 
 - See PROGRESS for exact latest counts/revision. New AI syllabus generation uses a local synthetic structured-response provider; this verifies protocol and safety checks, not a real model's planning quality.
 
 - Office recalculation exposed a date-text comparison issue in the weekly summary. Export now writes actual date cells (ISO display), uses numeric date bounds and retains ISO state values on import. LibreOffice recalculation of a known 45-minute current-week fixture gives **0.75 hours**; a dedicated regression checks the date cell type, formula and exact CRLF source preservation.
+
+- The new exact-CRLF regression initially failed in both clean-clone/CI runs at `05e82db`: spreadsheet XML normalized carriage returns. Reconciliation now recovers semantically unchanged text exactly from the portable baseline, retains all-CRLF convention for edited documents with a warning, and chunking never splits a CRLF pair. Edited mixed-newline documents remain an Office normalization boundary documented in DATA. The failing check was not waived.

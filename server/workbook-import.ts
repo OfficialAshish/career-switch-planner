@@ -4,6 +4,15 @@ import { guardXlsx, tables, importWorkbook } from './exports.js';
 import { parseState, operationSchema, type State } from '../shared/schema.js';
 
 const equal = isDeepStrictEqual;
+const normalizedNewlines = (value: string) => value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+// Spreadsheet XML engines normalize cell line endings; the embedded JSON baseline does not.
+function preserveUneditedText(value: unknown, baseline: unknown) {
+  return typeof value === 'string' &&
+    typeof baseline === 'string' &&
+    normalizedNewlines(value) === normalizedNewlines(baseline)
+    ? baseline
+    : value;
+}
 function plain(cell: ExcelJS.Cell): string | number | boolean {
   const v = cell.value;
   if (v === null || v === undefined) return '';
@@ -50,6 +59,25 @@ export async function reconcileWorkbook(buffer: Buffer, current: State) {
       currentList = next[key] as any[];
     const before = baseList.find((x) => x.id === value.id),
       now = currentList.find((x) => x.id === value.id);
+    if (!remove && before) {
+      for (const field of Object.keys(value))
+        value[field] = preserveUneditedText(value[field], before[field]);
+      if (kind === 'resumeDocument' || kind === 'promptTemplate') {
+        const field = kind === 'resumeDocument' ? 'source' : 'body',
+          original = String(before[field]);
+        if (
+          value[field] !== original &&
+          original.includes('\r\n') &&
+          !original.replace(/\r\n/g, '').includes('\r') &&
+          !original.replace(/\r\n/g, '').includes('\n')
+        ) {
+          value[field] = normalizedNewlines(String(value[field])).replace(/\n/g, '\r\n');
+          warnings.push(
+            `${kind} ${value.id}: edited text retains its original CRLF newline convention.`,
+          );
+        }
+      }
+    }
     if (remove && !before)
       throw new Error(`${kind} ${value.id}: cannot delete an ID not present at export.`);
     if (!remove && equal(value, before)) return;
@@ -151,7 +179,9 @@ export async function reconcileWorkbook(buffer: Buffer, current: State) {
     if (!(key in base.profile) || fields.has(key))
       throw new Error('Unknown or duplicate Profile field.');
     fields.add(key);
-    const value = ['weeklyHours', 'noticeDays'].includes(key) ? Number(row.value) : row.value;
+    const value = ['weeklyHours', 'noticeDays'].includes(key)
+      ? Number(row.value)
+      : preserveUneditedText(row.value, base.profile[key]);
     if (equal(value, base.profile[key])) continue;
     if (!equal(target.profile[key], base.profile[key]) && !equal(target.profile[key], value))
       throw new Error(`Conflict: Profile ${key} changed in both places.`);
