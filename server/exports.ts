@@ -395,7 +395,13 @@ export async function workbook(
         r.height = s.name === 'Start here' ? 58 : s.name === 'Dashboard' ? 26 : 48;
         r.eachCell((c) => {
           c.font = { name: 'Calibri', size: 11, color: { argb: 'FF203544' } };
-          c.alignment = { vertical: 'top', wrapText: true };
+          c.alignment = {
+            vertical: 'top',
+            wrapText: true,
+            ...(s.name === 'Dashboard' && /^B\d+$/.test(c.address)
+              ? { horizontal: 'left' as const }
+              : {}),
+          };
           if (i % 2 === 0)
             c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F5F8' } };
           if (typeof c.value === 'number') c.numFmt = '0.##';

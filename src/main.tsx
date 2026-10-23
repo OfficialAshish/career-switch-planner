@@ -13,6 +13,7 @@ const uid = () => crypto.randomUUID();
 const routes = [
   'Today',
   'Plan',
+  'Syllabus',
   'Practice',
   'Notes',
   'Projects & evidence',
@@ -21,7 +22,6 @@ const routes = [
   'Applications',
   'Research',
   'Settings',
-  'Syllabus',
 ];
 function currentRoute() {
   try {
@@ -35,6 +35,7 @@ function Icon({ index = 0 }: { index?: number }) {
   const paths = [
     'M4 12a8 8 0 1 0 16 0a8 8 0 1 0-16 0 M9 12l2 2 4-4',
     'M8 6h12 M8 12h12 M8 18h12 M3 6h1 M3 12h1 M3 18h1',
+    'M3 4h7l2 2 2-2h7v16h-7l-2 2-2-2H3z M12 6v16',
     'M8 5L2 12l6 7 M16 5l6 7-6 7 M14 3l-4 18',
     'M5 3h14v18H5z M8 7h8 M8 11h8 M8 15h5',
     'M12 2l10 10-10 10L2 12z M8 12l3 3 5-6',
@@ -43,7 +44,6 @@ function Icon({ index = 0 }: { index?: number }) {
     'M5 19L19 5 M6 5h13v13',
     'M10 3a7 7 0 1 0 0 14a7 7 0 1 0 0-14 M15 15l6 6',
     'M4 7h16 M4 17h16 M8 4v6 M16 14v6',
-    'M3 4h7l2 2 2-2h7v16h-7l-2 2-2-2H3z M12 6v16',
   ];
   return (
     <svg

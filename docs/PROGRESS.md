@@ -5,19 +5,19 @@
 - **Complete workbook data portability:** Dashboard-first summary, all tracking collections, profile, syllabus/resources, chunked exact LaTeX source and saved prompts, hidden baseline plus referenced raster images and saved research archives.
 - **Reviewed reconciliation:** three-way same-workspace comparisons, conservative conflict rejection, explicit deletions/reference validation, stale revision checks and consented different-workspace replacement. Missing rows never silently delete work. No live/background sync.
 - **Syllabus beyond DSA:** 33 unstarted practical concepts, role-customizable areas, dependencies, evidence/status, docs/course/video links and links to existing Plan outcomes. A detailed concept does not create a second session/estimate automatically.
-- **Any-AI exchange:** editable bounded-context prompts, copy/download, saved prompt documents, configured structured provider generation, external Markdown JSON import, new-record-only validation and explicit review/apply. No API required for import/manual tracking.
+- **Any-AI exchange:** editable bounded-context prompts, copy/download, saved prompt documents, configured structured provider generation, external Markdown JSON import, new-record-only validation (including optional planned projects, gates and interview drills) and explicit review/apply. No API required for import/manual tracking.
 - **Scrollable navigation:** fixed sidebar scrolls on short/mobile viewports; native topic dialogs keep keyboard focus and report errors in-dialog.
 - **Compatibility:** old states gain empty topic/prompt collections and persistent workspace identity with the pre-migration file preserved. Reviewed research replacement discards only unchanged unused starter topics, preserving custom/progressed topics and their prerequisites/tasks.
 
 ## Local verification
 
-- Node 24 / Linux: formatting, client/server TypeScript, **31 domain/API/export/protocol tests**, production build, **7 browser journeys**, shell launcher smoke and production dependency audit pass (zero vulnerabilities at the registry snapshot).
+- Node 24 / Linux: formatting, client/server TypeScript, **33 domain/API/export/protocol tests**, production build, **7 browser journeys**, shell launcher smoke and production dependency audit pass (zero vulnerabilities at the registry snapshot).
 - Browser suite includes desktop/mobile overflow capture of all **11 routes**, topic editing/persistence, saved prompts, external Markdown import/apply, workbook editing/import/apply and short-screen sidebar scrolling.
 - Workbook tests include full-source Unicode chunks, arrays, profile/resources/prompts, app-only edits, overlapping conflicts, same-ID safety, deletions/references, formula rejection, ZIP guards and full cross-workspace transfer with image remapping and explicit confirmation.
 - LibreOffice recalculation/resave → app import: **zero unintended changes**, 33 topics retained, formulas and hidden portable baseline retained. Direct Microsoft Excel / Google Sheets round-trip is **not verified**.
 - AI syllabus protocol is tested with a synthetic local provider, including rejecting manufactured explain-ready status. No real model-quality or paid-key claim.
 - Public-source/privacy scan passes; owner resumes and token files remain outside the repository. Private editable resume ZIP remains a separate handoff.
-- Ubuntu/Windows Actions verification for this new revision must be checked after pushing; prior green v0.2 CI is not proof of v0.3 behavior.
+- First v0.3 checkpoint `ee12fa5` passed a fresh public-clone install, formatting, 31 tests, production build, 7 browser journeys and launcher smoke. Ubuntu CI is green; Windows completed check/launcher/native compiler/audit and is downloading Chromium. Final refinements add bounded professional-summary/verified-skill context, optional planned projects/gates/drills, clearer navigation and two extra tests; check their own Actions revision after pushing.
 
 ## Honest limits and recovery
 

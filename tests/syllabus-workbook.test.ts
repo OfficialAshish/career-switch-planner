@@ -213,3 +213,57 @@ test('foreign workbooks clone all unchanged records, not just rows edited since 
   assert.equal(result.state!.resumeDocuments[0].source, original.resumeDocuments[0].source);
   assert.equal(result.state!.workspaceId, original.workspaceId);
 });
+
+test('external syllabus can add planned deliverables and gates but cannot invent achievements', () => {
+  const state = initialState();
+  const p: any = envelope(state);
+  p.operations.push({
+    kind: 'project',
+    value: {
+      id: 'role-project',
+      title: 'Portfolio exercise',
+      status: 'Planned',
+      summary: 'Build and explain a role-specific artifact',
+      evidence: '',
+      nextAction: 'Scope a small first step',
+    },
+  });
+  p.operations.push({
+    kind: 'gate',
+    value: {
+      id: 'role-gate',
+      area: 'Role assessment',
+      criteria: 'Demonstrate an unfamiliar exercise and defend choices',
+      status: 'Not started',
+      evidence: '',
+    },
+  });
+  p.operations.push({
+    kind: 'story',
+    value: {
+      id: 'role-drill',
+      title: 'Practice',
+      prompt: 'Tell me about a relevant problem',
+      body: '[Actual situation and personal contribution]',
+      followups: ['What did you own?'],
+    },
+  });
+  assert.equal(syllabusImport(markdown(p), state).operations.length, 4);
+  p.operations[1].value.status = 'Evidence ready';
+  assert.throws(() => syllabusImport(markdown(p), state), /Planned/);
+  p.operations[1].value.status = 'Planned';
+  p.operations[2].value.id = state.gates[0].id;
+  assert.throws(() => syllabusImport(markdown(p), state), /NEW IDs/);
+});
+
+test('prompt includes bounded saved baseline while excluding contact fields and raw evidence', () => {
+  const state = initialState();
+  state.profile.summary = 'A synthetic Python developer';
+  state.profile.email = 'never-include@example.test';
+  state.tasks[0].evidence = 'private raw evidence';
+  const prompt = syllabusPrompt(state);
+  assert.ok(prompt.includes(state.profile.summary));
+  assert.ok(!prompt.includes(state.profile.email));
+  assert.ok(!prompt.includes(state.tasks[0].evidence));
+  assert.ok(prompt.length < 60000);
+});

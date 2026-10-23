@@ -81,6 +81,16 @@ export function Syllabus({ state, onState }: { state: State; onState: (s: State)
         <button disabled={busy} onClick={() => run(() => propose('syllabus/starter'))}>
           Review starter syllabus
         </button>
+        <button
+          onClick={() => {
+            if (!prompt) setPrompt(syllabusPrompt(state));
+            document
+              .getElementById('syllabus-ai')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        >
+          Build / import AI syllabus
+        </button>
       </div>
       <div className="form-grid">
         <label className="field">
@@ -145,19 +155,25 @@ export function Syllabus({ state, onState }: { state: State; onState: (s: State)
                   </li>
                 ))}
               </ul>
-              {t.notes && <p className="muted">{t.notes}</p>}
+              {t.notes && (
+                <details>
+                  <summary>Notes & scope</summary>
+                  <p className="muted">{t.notes}</p>
+                </details>
+              )}
               {t.evidence && <p>Evidence: {t.evidence}</p>}
               <button onClick={() => setEditor(structuredClone(t))}>Edit topic / progress</button>
             </article>
           ))}
       </div>
-      <article className="card">
+      <article className="card" id="syllabus-ai">
         <h2>Build a syllabus with any AI—or no API</h2>
         <p>
-          Generate an editable prompt from saved target, capacity, task titles/status and readiness
-          criteria. Contact details, private evidence and API keys are excluded. Review the prompt
-          before sharing it with any provider. For source-grounded online research use Research
-          first and paste the relevant excerpts here.
+          Generate an editable prompt from saved professional summary/verified skill text, target,
+          capacity, task titles/status and readiness criteria. Contact fields, raw evidence and API
+          keys are excluded; your professional free text may still contain personal details. Review
+          the prompt before sharing it with any provider. For source-grounded online research use
+          Research first and paste the relevant excerpts here.
         </p>
         <div className="toolbar">
           <button onClick={() => setPrompt(syllabusPrompt(state))}>
