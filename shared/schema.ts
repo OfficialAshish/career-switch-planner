@@ -1,5 +1,14 @@
 import { z } from 'zod';
-export const tracks = ['DSA', 'SQL', 'Backend', 'AI', 'Systems', 'Interview', 'Career'] as const;
+export const tracks = [
+  'DSA',
+  'SQL',
+  'Backend',
+  'AI',
+  'Systems',
+  'Interview',
+  'Career',
+  'Role',
+] as const;
 export const id = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 export const text = z.string().max(20_000);
 export const short = z.string().max(300);
@@ -163,8 +172,17 @@ export const profileSchema = z
     theme: z.enum(['system', 'light', 'dark']),
   })
   .strict();
+export const resumeDocumentSchema = z
+  .object({
+    id,
+    title: short.min(1),
+    source: z.string().max(200_000),
+    updatedAt: short,
+  })
+  .strict();
 export const stateSchema = z
   .object({
+    resumeDocuments: z.array(resumeDocumentSchema).max(20).default([]),
     schemaVersion: z.literal(1),
     revision: z.number().int().nonnegative(),
     updatedAt: short,
@@ -211,6 +229,7 @@ export const proposalSchema = z
 export type Proposal = z.infer<typeof proposalSchema>;
 export function validateReferences(state: State): State {
   const groups = [
+    state.resumeDocuments,
     state.tasks,
     state.sessions,
     state.questions,

@@ -5,6 +5,8 @@ import { tracks } from '../shared/schema';
 import { planning, localDay, nextReview } from '../shared/planner';
 import { api, load, fileBase64, type Preview } from './api';
 import './style.css';
+import { LatexStudio } from './LatexStudio';
+import { ResearchPlanner } from './ResearchPlanner';
 const uid = () => crypto.randomUUID();
 const routes = [
   'Today',
@@ -435,6 +437,7 @@ function App() {
     [dueOnly, setDueOnly] = useState(false),
     [attempt, setAttempt] = useState<any>(),
     [future, setFuture] = useState(false);
+  const [studio, setStudio] = useState(false);
   useEffect(() => {
     load()
       .then((d) => {
@@ -1061,101 +1064,117 @@ function App() {
             )}
             {route === 'Resume' && (
               <>
-                <div className="banner">
-                  Current mode includes only claims you mark Verified. Future-state mode may use
-                  completed-style wording for your target, but remains a labeled working draft until
-                  every claim is true. Profile text is self-entered and must also be checked.
+                <div className="actions toolbar no-print">
+                  <Button className={!studio ? 'primary' : ''} onClick={() => setStudio(false)}>
+                    Structured resume
+                  </Button>
+                  <Button className={studio ? 'primary' : ''} onClick={() => setStudio(true)}>
+                    LaTeX editor &amp; PDF
+                  </Button>
                 </div>
-                <div className="actions toolbar">
-                  <label className="check">
-                    <input
-                      type="checkbox"
-                      checked={future}
-                      onChange={(e) => setFuture(e.target.checked)}
-                    />
-                    Future-state draft
-                  </label>
-                  <Button onClick={() => nav('Settings')}>Edit profile</Button>
-                  <Button onClick={() => window.print()}>Print / save PDF</Button>
-                  <a className="button" href={'/api/resume.docx?future=' + future}>
-                    DOCX ↓
-                  </a>
-                  <a className="button" href={'/api/resume.tex?future=' + future}>
-                    LaTeX ↓
-                  </a>
-                </div>
-                <div className="two-col resume-layout">
-                  <section className="panel no-print">
-                    <div className="section-title">
-                      <h2>Claims & evidence</h2>
-                      <Button className="primary" onClick={() => edit('claims')}>
-                        ＋ Claim
-                      </Button>
+                {studio ? (
+                  <LatexStudio state={state} onState={setState} />
+                ) : (
+                  <>
+                    <div className="banner">
+                      Current mode includes only claims you mark Verified. Future-state mode may use
+                      completed-style wording for your target, but remains a labeled working draft
+                      until every claim is true. Profile text is self-entered and must also be
+                      checked.
                     </div>
-                    {state.claims.length ? (
-                      state.claims.map((c) => (
-                        <article className="claim" key={c.id}>
-                          <span className="tag">
-                            {c.status} · {c.category}
-                          </span>
-                          <p>{c.text}</p>
-                          <small>{c.evidence || 'Evidence not recorded'}</small>
-                          <Button onClick={() => edit('claims', c)}>Edit claim</Button>
-                        </article>
-                      ))
-                    ) : (
-                      <Empty>
-                        Add real experience, project and skill claims. AI can propose wording, but
-                        cannot verify your achievements.
-                      </Empty>
-                    )}
-                    <Button
-                      onClick={() =>
-                        setAi({
-                          mode: 'resume',
-                          text: 'Refine my supplied claims without inventing facts or results. Keep planned work marked Planned.',
-                        })
-                      }
-                    >
-                      AI wording proposal
-                    </Button>
-                  </section>
-                  <article className="resume-paper" id="resume-print">
-                    <h2>{p.name || 'YOUR NAME'}</h2>
-                    <p>{p.headline || 'Your professional headline'}</p>
-                    <small>{[p.location, p.email, p.phone].filter(Boolean).join(' | ')}</small>
-                    <p className="preline">{p.links}</p>
-                    {future && (
-                      <p className="draft-label">
-                        FUTURE-STATE WORKING DRAFT — VERIFY BEFORE APPLYING
-                      </p>
-                    )}
-                    {p.summary && <p>{p.summary}</p>}
-                    {['Experience', 'Project', 'Skill'].map((category) => (
-                      <section key={category}>
-                        <h3>
-                          {category === 'Project'
-                            ? 'Projects'
-                            : category === 'Skill'
-                              ? 'Skills'
-                              : 'Experience'}
-                        </h3>
-                        {category === 'Experience' && <p className="preline">{p.employment}</p>}
-                        <ul>
-                          {state.claims
-                            .filter(
-                              (c) => c.category === category && (future || c.status === 'Verified'),
-                            )
-                            .map((c) => (
-                              <li key={c.id}>{c.text}</li>
-                            ))}
-                        </ul>
+                    <div className="actions toolbar">
+                      <label className="check">
+                        <input
+                          type="checkbox"
+                          checked={future}
+                          onChange={(e) => setFuture(e.target.checked)}
+                        />
+                        Future-state draft
+                      </label>
+                      <Button onClick={() => nav('Settings')}>Edit profile</Button>
+                      <Button onClick={() => window.print()}>Print / save PDF</Button>
+                      <a className="button" href={'/api/resume.docx?future=' + future}>
+                        DOCX ↓
+                      </a>
+                      <a className="button" href={'/api/resume.tex?future=' + future}>
+                        LaTeX ↓
+                      </a>
+                    </div>
+                    <div className="two-col resume-layout">
+                      <section className="panel no-print">
+                        <div className="section-title">
+                          <h2>Claims & evidence</h2>
+                          <Button className="primary" onClick={() => edit('claims')}>
+                            ＋ Claim
+                          </Button>
+                        </div>
+                        {state.claims.length ? (
+                          state.claims.map((c) => (
+                            <article className="claim" key={c.id}>
+                              <span className="tag">
+                                {c.status} · {c.category}
+                              </span>
+                              <p>{c.text}</p>
+                              <small>{c.evidence || 'Evidence not recorded'}</small>
+                              <Button onClick={() => edit('claims', c)}>Edit claim</Button>
+                            </article>
+                          ))
+                        ) : (
+                          <Empty>
+                            Add real experience, project and skill claims. AI can propose wording,
+                            but cannot verify your achievements.
+                          </Empty>
+                        )}
+                        <Button
+                          onClick={() =>
+                            setAi({
+                              mode: 'resume',
+                              text: 'Refine my supplied claims without inventing facts or results. Keep planned work marked Planned.',
+                            })
+                          }
+                        >
+                          AI wording proposal
+                        </Button>
                       </section>
-                    ))}
-                    <h3>Education</h3>
-                    <p className="preline">{p.education}</p>
-                  </article>
-                </div>
+                      <article className="resume-paper" id="resume-print">
+                        <h2>{p.name || 'YOUR NAME'}</h2>
+                        <p>{p.headline || 'Your professional headline'}</p>
+                        <small>{[p.location, p.email, p.phone].filter(Boolean).join(' | ')}</small>
+                        <p className="preline">{p.links}</p>
+                        {future && (
+                          <p className="draft-label">
+                            FUTURE-STATE WORKING DRAFT — VERIFY BEFORE APPLYING
+                          </p>
+                        )}
+                        {p.summary && <p>{p.summary}</p>}
+                        {['Experience', 'Project', 'Skill'].map((category) => (
+                          <section key={category}>
+                            <h3>
+                              {category === 'Project'
+                                ? 'Projects'
+                                : category === 'Skill'
+                                  ? 'Skills'
+                                  : 'Experience'}
+                            </h3>
+                            {category === 'Experience' && <p className="preline">{p.employment}</p>}
+                            <ul>
+                              {state.claims
+                                .filter(
+                                  (c) =>
+                                    c.category === category && (future || c.status === 'Verified'),
+                                )
+                                .map((c) => (
+                                  <li key={c.id}>{c.text}</li>
+                                ))}
+                            </ul>
+                          </section>
+                        ))}
+                        <h3>Education</h3>
+                        <p className="preline">{p.education}</p>
+                      </article>
+                    </div>
+                  </>
+                )}
               </>
             )}
             {route === 'Interview' && (
@@ -1202,9 +1221,10 @@ function App() {
             {route === 'Applications' && (
               <>
                 <p className="lede">
-                  Check India eligibility, coding ownership, mentoring, workload, fixed pay versus
-                  CTC, employment versus contracting, and notice flexibility. “Remote” does not mean
-                  every country. Research roles early; apply when the relevant gates are ready.
+                  Check location eligibility, coding ownership, mentoring, workload, fixed pay
+                  versus CTC, employment versus contracting, and notice flexibility. “Remote” does
+                  not mean every country. Research roles early; apply when the relevant gates are
+                  ready.
                 </p>
                 <Button
                   onClick={() =>
@@ -1228,10 +1248,12 @@ function App() {
             )}
             {route === 'Research' && (
               <>
+                <ResearchPlanner state={state} onState={setState} />
                 <p className="lede">
                   Save dated evidence, distinguish salary bands from your own target, and recheck
                   vacancies before applying. The source reader loads a public page only when you
-                  request it; it is not a search engine. AI does not browse by itself.
+                  request it. Use the research workflow above for application-triggered search and
+                  planning.
                 </p>
                 <SourceReader run={run} add={(r) => edit('sources', r)} />
                 {state.sources.length ? (

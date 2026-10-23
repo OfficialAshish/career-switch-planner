@@ -43,3 +43,7 @@ Native interactive Windows double-click/browser UX, actual Google Sheets convers
 ## Recovery and continuation
 
 Inspect the working tree before syncing. Read this file, `DECISIONS.md`, `ARCHITECTURE.md` and known limitations. Never overwrite unrelated work or commit `data/`, `.env`, credentials or personal documents. Completed checkpoints are pushed to `main`; Git history and the private Notion engineering tracker retain recovery context. No access token is part of source or Git remote URLs.
+
+## v0.2 work in progress
+
+Requested upgrades: exact-source LaTeX editing/real PDF compilation, and application-triggered autonomous research/planning. Implemented optional checksum-pinned Tectonic installation, source autosave, PDF.js preview, durable research runs, built-in role-aware query/synthesis prompts, guarded search/source fetch, retry/cancel/review/apply and old-workspace compatibility. Sixteen local tests and existing browser journeys pass at the first implementation checkpoint. Real Tectonic 0.17 installation and original resume compilation passed; full new-feature browser, security and cross-platform checks are still in progress. Private source documents remain outside the public repository.

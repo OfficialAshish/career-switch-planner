@@ -1,3 +1,4 @@
+import { boundedBody } from './network.js';
 import https from 'node:https';
 import dns from 'node:dns/promises';
 import net from 'node:net';
@@ -18,10 +19,10 @@ export function publicIPv4(ip: string): boolean {
     (a === 203 && b === 0)
   );
 }
-export async function readPublicPage(
+export async function fetchPublicHtml(
   raw: string,
   depth = 0,
-): Promise<{ title: string; url: string; excerpt: string }> {
+): Promise<{ html: string; url: string }> {
   const u = new URL(raw);
   if (u.protocol !== 'https:' || (u.port && u.port !== '443') || u.username || u.password)
     throw new Error('Research accepts public HTTPS URLs on port 443 without credentials.');
@@ -45,6 +46,7 @@ export async function readPublicPage(
           Accept: 'text/html,text/plain;q=0.9',
           'Accept-Encoding': 'identity',
         },
+        signal: AbortSignal.timeout(12000),
         family: 4,
         lookup: (_hostname, _options, cb) => cb(null, chosen.address, 4),
       },
@@ -92,9 +94,14 @@ export async function readPublicPage(
   });
   if (result.redirect) {
     if (depth >= 3) throw new Error('Too many redirects.');
-    return readPublicPage(new URL(result.redirect, u).href, depth + 1);
+    return fetchPublicHtml(new URL(result.redirect, u).href, depth + 1);
   }
-  const $ = cheerio.load(result.body);
+  return { html: result.body, url: u.href };
+}
+export async function readPublicPage(raw: string) {
+  const result = await fetchPublicHtml(raw);
+  const u = new URL(result.url);
+  const $ = cheerio.load(result.html);
   $('script,style,noscript,nav,footer,header,iframe,form').remove();
   const title = $('title').first().text().trim().slice(0, 300) || u.hostname;
   const body = $('article').length
@@ -105,6 +112,65 @@ export async function readPublicPage(
   return {
     title,
     url: u.href,
-    excerpt: body.replace(/\s+/g, ' ').trim().slice(0, 18_000) || result.body.slice(0, 18_000),
+    excerpt: body.replace(/\s+/g, ' ').trim().slice(0, 18_000) || result.html.slice(0, 18_000),
   };
+}
+
+export type SearchResult = { title: string; url: string; snippet: string };
+export async function searchWeb(query: string, key?: string): Promise<SearchResult[]> {
+  if (key) {
+    const response = await fetch(
+      'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=5',
+      {
+        headers: { 'X-Subscription-Token': key, Accept: 'application/json' },
+        signal: AbortSignal.timeout(15000),
+        redirect: 'error',
+      },
+    );
+    if (!response.ok)
+      throw new Error(
+        `Search provider HTTP ${response.status}. Check the optional Brave search key.`,
+      );
+    const raw = (await boundedBody(response, 500000)).toString('utf8');
+    if (raw.length > 500000) throw new Error('Search response too large.');
+    const data = JSON.parse(raw);
+    return (data.web?.results || [])
+      .slice(0, 5)
+      .map((r: any) => ({
+        title: String(r.title || '').slice(0, 300),
+        url: String(r.url || '').slice(0, 2048),
+        snippet: String(r.description || '').slice(0, 500),
+      }))
+      .filter((r: SearchResult) => r.url.startsWith('https://'));
+  }
+  const { html } = await fetchPublicHtml(
+    'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query),
+  );
+  const $ = cheerio.load(html);
+  const results: SearchResult[] = [];
+  $('.result').each((_i, el) => {
+    const a = $(el).find('.result__a').first();
+    let href = a.attr('href') || '';
+    try {
+      const u = new URL(href, 'https://html.duckduckgo.com');
+      href = u.searchParams.get('uddg') || u.href;
+      const target = new URL(href);
+      if (
+        target.protocol === 'https:' &&
+        !target.username &&
+        !target.password &&
+        results.length < 5
+      )
+        results.push({
+          title: a.text().trim().slice(0, 300),
+          url: target.href,
+          snippet: $(el).find('.result__snippet').text().trim().slice(0, 500),
+        });
+    } catch {}
+  });
+  if (!results.length)
+    throw new Error(
+      'Search returned no readable results (possibly a bot challenge). Retry later or supply authoritative source URLs. No search evidence was invented.',
+    );
+  return results;
 }
