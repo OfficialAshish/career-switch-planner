@@ -1,3 +1,5 @@
+import { syllabusImport, starterTopics } from '../shared/syllabus.js';
+import { reconcileWorkbook } from './workbook-import.js';
 import express from 'express';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
@@ -69,6 +71,9 @@ export function createApp(
       .object({
         revision: expected,
         collection: z.enum([
+          'topics',
+          'promptTemplates',
+          'resumeDocuments',
           'tasks',
           'sessions',
           'attempts',
@@ -96,6 +101,27 @@ export function createApp(
     const b = z.object({ text: z.string().max(5000), date: z.string().optional() }).parse(req.body);
     res.json(quickLog(b.text, b.date || localDay(), store.state));
   });
+  app.post('/api/syllabus/import', (req, res) => {
+    const b = z
+      .object({ markdown: z.string().max(2_000_000) })
+      .strict()
+      .parse(req.body);
+    res.json(syllabusImport(b.markdown, store.state));
+  });
+  app.post('/api/syllabus/generate', async (req, res) => {
+    const b = z
+      .object({ prompt: z.string().min(1).max(60000) })
+      .strict()
+      .parse(req.body);
+    res.json(await provider.syllabus(b.prompt, store.state));
+  });
+  app.get('/api/syllabus/starter', (_req, res) =>
+    res.json({
+      summary:
+        'Add generic Python/backend/AI starter topics. Adapt to your role; no progress is recorded.',
+      operations: starterTopics(store.state).map((value) => ({ kind: 'topic', value })),
+    }),
+  );
   app.get('/api/provider', (_req, res) => res.json(provider.info()));
   app.post('/api/provider', async (req, res) => {
     const b = z
@@ -194,12 +220,90 @@ export function createApp(
     const b = z.object({ id: z.string().uuid(), revision: expected }).strict().parse(req.body);
     res.json(await workflow.apply(b.id, b.revision));
   });
+  async function portableImages(state: State) {
+    const images: Record<string, string> = {};
+    let size = 0;
+    for (const key of new Set(state.notes.flatMap((n) => n.attachments))) {
+      const bytes = await fs.readFile(await findImage(store.root, key));
+      size += bytes.length;
+      if (size > 18 * 1024 * 1024)
+        throw new Error('Images exceed portable limit. Copy the stopped data folder instead.');
+      images[key] = bytes.toString('base64');
+    }
+    return images;
+  }
   app.get('/api/export.xlsx', async (_req, res) =>
     res
       .type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       .attachment('career-tracker.xlsx')
-      .send(await workbook(store.state)),
+      .send(
+        await workbook(store.state, {
+          images: await portableImages(store.state),
+          researchRuns: await workflow.export(),
+        }),
+      ),
   );
+  const workbookBody = z.object({ base64: z.string().max(16_000_000) }).strict();
+  async function readWorkbook(base64: string) {
+    const bytes = Buffer.from(base64, 'base64');
+    if (bytes.length > 10 * 1024 * 1024) throw new Error('Workbook maximum 10 MB.');
+    const result = await reconcileWorkbook(bytes, store.state);
+    if (result.portable) {
+      // Preserve current local assets when the baseline came from an older export.
+      const images = result.transfer
+        ? result.portable.images
+        : { ...result.portable.images, ...(await portableImages(store.state)) };
+      result.portable = parseBackup({
+        format: 'career-switch-planner',
+        version: 1,
+        state: result.state,
+        images,
+        researchRuns: result.portable.researchRuns || [],
+      });
+    }
+    return result;
+  }
+  app.post('/api/workbook/preview', async (req, res) => {
+    const b = workbookBody.parse(req.body),
+      r = await readWorkbook(b.base64);
+    res.json({
+      summary: r.summary,
+      changes: r.changes,
+      warnings: r.warnings,
+      transfer: !!r.transfer,
+    });
+  });
+  app.post('/api/workbook/apply', async (req, res) => {
+    const b = workbookBody
+      .extend({ revision: expected, confirmReplacement: z.boolean().default(false) })
+      .parse(req.body);
+    if (b.revision !== store.state.revision)
+      throw new ConflictError('Workspace changed. Preview the workbook again.');
+    const result = await readWorkbook(b.base64);
+    if (result.transfer && !b.confirmReplacement)
+      throw new Error('Confirm full replacement when importing a different workspace.');
+    let next: State;
+    if (result.legacy) next = applyOperations(store.state, result.legacy.operations);
+    else {
+      next = result.state!;
+      const assetMap = new Map<string, string>();
+      for (const [key, value] of Object.entries(result.portable.images as Record<string, string>))
+        assetMap.set(key, await saveImage(store.root, Buffer.from(value, 'base64')));
+      next.notes.forEach((n) => (n.attachments = n.attachments.map((k) => assetMap.get(k)!)));
+    }
+    // Validate before saving, including every referenced image.
+    for (const key of new Set(next.notes.flatMap((n) => n.attachments)))
+      await findImage(store.root, key);
+    const saved = await store.replace(b.revision, parseState(next));
+    if (result.portable)
+      try {
+        await workflow.import(result.portable.researchRuns);
+      } catch {
+        store.notice =
+          'Workbook data saved; auxiliary research archive could not be restored. Keep the workbook.';
+      }
+    res.json(saved);
+  });
   app.post('/api/import-xlsx', async (req, res) => {
     const b = z
       .object({ base64: z.string().max(16_000_000) })

@@ -311,3 +311,166 @@ test('LaTeX document API preserves exact source in backups and requires trusted 
     assert.equal((await post('latex/document', { revision: 0, document })).status, 409);
     assert.equal(store.state.resumeDocuments[0].source, source);
   }));
+
+test('full workbook API previews, reconciles, transfers images and requires foreign-workspace confirmation', async () =>
+  fixture(async ({ post, get, store }: any) => {
+    const png =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jXioAAAAASUVORK5CYII=';
+    const image = await (await post('images', { base64: png })).json();
+    const saved = await (
+      await post('operations', {
+        revision: 0,
+        operations: [
+          {
+            kind: 'note',
+            value: {
+              id: 'portable-note',
+              title: 'Portable note',
+              category: 'Test',
+              body: 'Workbook transfer',
+              tags: [],
+              attachments: [image.id],
+              updatedAt: 'now',
+            },
+          },
+          {
+            kind: 'resumeDocument',
+            value: {
+              id: 'portable-tex',
+              title: 'Resume',
+              source: '\\documentclass{article}\n% no changes',
+              updatedAt: 'now',
+            },
+          },
+        ],
+      })
+    ).json();
+    assert.equal(saved.revision, 1);
+    const response = await get('export.xlsx');
+    assert.equal(response.status, 200);
+    const original = Buffer.from(await response.arrayBuffer());
+    const w = new ExcelJS.Workbook();
+    await w.xlsx.load(original as any);
+    w.getWorksheet('Syllabus')!.getCell('H2').value = 'Learning';
+    const base64 = Buffer.from(await w.xlsx.writeBuffer()).toString('base64');
+    const preview = await (await post('workbook/preview', { base64 })).json();
+    assert.equal(preview.transfer, false);
+    assert.equal(preview.changes.length, 1);
+    assert.equal(store.state.topics[0].status, 'Not started');
+    const applied = await (await post('workbook/apply', { base64, revision: 1 })).json();
+    assert.equal(applied.topics[0].status, 'Learning');
+    assert.equal(applied.notes[0].body, 'Workbook transfer');
+    assert.equal((await get('images/' + applied.notes[0].attachments[0])).status, 200);
+    assert.equal((await post('workbook/apply', { base64, revision: 1 })).status, 409);
+    const foreign = initialState();
+    foreign.profile.name = 'Different workspace';
+    await store.replace(2, foreign);
+    const transfer = await (await post('workbook/preview', { base64 })).json();
+    assert.equal(transfer.transfer, true);
+    assert.equal((await post('workbook/apply', { base64, revision: 3 })).status, 400);
+    const restored = await (
+      await post('workbook/apply', { base64, revision: 3, confirmReplacement: true })
+    ).json();
+    assert.equal(restored.notes[0].title, 'Portable note');
+    assert.equal(restored.resumeDocuments[0].source, '\\documentclass{article}\n% no changes');
+    assert.equal(restored.topics[0].status, 'Learning');
+    assert.equal(restored.workspaceId, saved.workspaceId);
+    assert.equal((await get('images/' + restored.notes[0].attachments[0])).status, 200);
+  }));
+
+test('syllabus API is offline-capable and never applies a proposal before review', async () =>
+  fixture(async ({ get, post, store }: any) => {
+    const state = store.state;
+    const topic = {
+      ...state.topics[0],
+      id: 'external-concept',
+      title: 'External AI concept',
+      prerequisites: [],
+    };
+    const md =
+      '```career-syllabus\n' +
+      JSON.stringify({
+        format: 'career-syllabus',
+        version: 1,
+        baseRevision: 0,
+        summary: 'Suggested syllabus',
+        operations: [{ kind: 'topic', value: topic }],
+      }) +
+      '\n```';
+    const preview = await (await post('syllabus/import', { markdown: md })).json();
+    assert.equal(preview.operations[0].value.id, 'external-concept');
+    assert.ok(!store.state.topics.some((t: any) => t.id === 'external-concept'));
+    assert.equal(
+      (await post('operations', { revision: 0, operations: preview.operations })).status,
+      200,
+    );
+    assert.ok(store.state.topics.some((t: any) => t.id === 'external-concept'));
+    assert.equal((await post('syllabus/import', { markdown: md })).status, 400);
+    assert.equal(
+      (await post('syllabus/generate', { prompt: 'No provider configured' })).status,
+      400,
+    );
+    assert.equal((await get('syllabus/starter')).status, 200);
+  }));
+
+test('configured syllabus generation uses structured protocol and rejects manufactured progress', async () => {
+  const { createServer } = await import('node:http');
+  const root = await mkdtemp(path.join(os.tmpdir(), 'career-syllabus-ai-'));
+  const state = initialState();
+  let bad = false;
+  let sent: any;
+  const mock = createServer(async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    sent = JSON.parse(body);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        message: {
+          content: JSON.stringify({
+            format: 'career-syllabus',
+            version: 1,
+            baseRevision: state.revision,
+            summary: 'Synthetic structured curriculum',
+            operations: [
+              {
+                kind: 'topic',
+                value: {
+                  ...state.topics[0],
+                  id: 'mock-generated-topic',
+                  prerequisites: [],
+                  status: bad ? 'Explain-ready' : 'Not started',
+                },
+              },
+            ],
+          }),
+        },
+      }),
+    );
+  });
+  mock.listen(0, '127.0.0.1');
+  await new Promise<void>((r) => mock.once('listening', r));
+  try {
+    const provider = new Provider(root);
+    await provider.init();
+    await provider.configure({
+      type: 'ollama',
+      endpoint: `http://127.0.0.1:${(mock.address() as any).port}`,
+      model: 'mock',
+    });
+    const proposal = await provider.syllabus('Owner-reviewed prompt', state);
+    assert.equal(proposal.operations.length, 1);
+    assert.equal(sent.format, 'json');
+    assert.equal(sent.messages[1].content, 'Owner-reviewed prompt');
+    assert.equal(
+      state.topics.some((t) => t.id === 'mock-generated-topic'),
+      false,
+    );
+    bad = true;
+    await assert.rejects(() => provider.syllabus('Same prompt', state), /unstarted/);
+    assert.equal(provider.info().busy, false);
+  } finally {
+    await new Promise<void>((r) => mock.close(() => r()));
+    await rm(root, { recursive: true, force: true });
+  }
+});

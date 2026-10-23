@@ -5,6 +5,8 @@ import { tracks } from '../shared/schema';
 import { planning, localDay, nextReview } from '../shared/planner';
 import { api, load, fileBase64, type Preview } from './api';
 import './style.css';
+import { WorkbookExchange } from './WorkbookExchange';
+import { Syllabus } from './Syllabus';
 import { LatexStudio } from './LatexStudio';
 import { ResearchPlanner } from './ResearchPlanner';
 const uid = () => crypto.randomUUID();
@@ -19,6 +21,7 @@ const routes = [
   'Applications',
   'Research',
   'Settings',
+  'Syllabus',
 ];
 function currentRoute() {
   try {
@@ -40,6 +43,7 @@ function Icon({ index = 0 }: { index?: number }) {
     'M5 19L19 5 M6 5h13v13',
     'M10 3a7 7 0 1 0 0 14a7 7 0 1 0 0-14 M15 15l6 6',
     'M4 7h16 M4 17h16 M8 4v6 M16 14v6',
+    'M3 4h7l2 2 2-2h7v16h-7l-2 2-2-2H3z M12 6v16',
   ];
   return (
     <svg
@@ -508,6 +512,7 @@ function App() {
     Applications: 'Find a better fit, not just a new title.',
     Research: 'Sources before certainty.',
     Settings: 'Your workspace, your rules.',
+    Syllabus: 'Learn, build, explain. Beyond a question list.',
   };
   function cards(collection: Collection, records: any[], subtitle: (r: any) => string) {
     return (
@@ -596,7 +601,7 @@ function App() {
                 <p className="eyebrow">{route.toUpperCase()}</p>
                 <h1>{heading[route] || heading.Today}</h1>
               </div>
-              {!['Today', 'Settings', 'Plan', 'Practice', 'Resume'].includes(route) && (
+              {!['Today', 'Settings', 'Plan', 'Practice', 'Resume', 'Syllabus'].includes(route) && (
                 <Button
                   className="primary"
                   onClick={() =>
@@ -1276,6 +1281,7 @@ function App() {
                 </Button>
               </>
             )}
+            {route === 'Syllabus' && <Syllabus state={state} onState={setState} />}
             {route === 'Settings' && (
               <Settings
                 state={state}
@@ -1809,21 +1815,13 @@ function Settings({
           </a>
         </div>
         <div className="form-grid">
-          <Field label="Import Excel tracker (preview upserts)">
-            <input
-              type="file"
-              accept=".xlsx"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f)
-                  run(async () => {
-                    if (f.size > 10 * 1024 * 1024) throw new Error('Maximum 10 MB');
-                    preview(await api('import-xlsx', { base64: await fileBase64(f) }));
-                  });
-                e.target.value = '';
-              }}
-            />
-          </Field>
+          <WorkbookExchange
+            state={state}
+            onState={(next) => {
+              setState(next);
+              setProfile(next.profile);
+            }}
+          />
           <Field label="Restore full JSON backup (preview replacement)">
             <input
               type="file"
@@ -1844,9 +1842,11 @@ function Settings({
           </Field>
         </div>
         <p className="muted">
-          Excel imports support this app’s sheet names, stable IDs and plain values only. Legacy
-          trackers are not silently mapped. Formula/object cells are rejected. Exported dashboard is
-          a snapshot; only documented data sheets import.
+          Full workbook sheets carry syllabus, resources, profile, source documents, prompts and all
+          tracking records. The first sheet summarizes them. Import reconciles edits against the
+          export baseline; conflicts are rejected. Dashboard formulas are not imported as data. No
+          background sync; export a fresh copy after importing. Keep the hidden portable sheet
+          intact.
         </p>
         {backup && (
           <div className="banner">

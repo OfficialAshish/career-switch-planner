@@ -57,3 +57,7 @@ Proposed future improvements live in ROADMAP, not in this diagram as if already 
 ## v0.2 components
 
 `shared/latex-template.ts` generates clean generic templates; `src/LatexStudio.tsx` owns source/PDF editing, while `server/latex.ts` installs and invokes the optional compiler. `shared/research-contract.ts` defines durable run records; `server/research-workflow.ts` orchestrates bounded query/search/read/synthesis and reviewed atomic application. `server/research.ts` handles DNS-pinned public retrieval/search adapters; `server/network.ts` provides bounded response reads. Model output never becomes a shell tool or a verified achievement.
+
+## v0.3 syllabus and workbook reconciliation
+
+`shared/syllabus.ts` owns the portable fenced-JSON Markdown contract, fresh context prompts, starter learning content and new-record-only validators. `src/Syllabus.tsx` supports manual edits/progress/resource links and configured/external AI. `server/workbook-import.ts` reconciles workbook rows against the embedded baseline and stable workspace identity; same-workspace edits are three-way checked and foreign-workspace transfers require replacement consent. `server/exports.ts` emits Dashboard-first full data sheets, separate resources, chunked text documents and hidden portable baseline/assets. Keys, provider configuration and compiler caches are not portable workspace data. Import preview/apply revalidate references, images and revisions; archive import is auxiliary and not in the atomic state transaction.

@@ -6,6 +6,14 @@ The default syllabus is a starting template for backend/applied-AI switching. Ch
 
 Set 18–20 hours/week if realistic, 19 by default. Allocate that same budget to coding/revision, backend/AI, systems/explanation and career/mock work. For example: DSA 7.5, backend/AI 6, systems/speaking 3, career 2.5 = 19. SQL and coding mocks must be assigned inside these totals, not extra invisible hours. This allocation is a suggestion, not a mandatory fixed timetable.
 
+## Concepts and resources, not only DSA
+
+Open **Syllabus** for Python foundations, backend/system design and AI/chatbot concepts. Learn from each topic's linked resource, implement its exercise, then record a concise explanation/evidence. Link a Plan outcome and log time **once** in Today. Existing users can review/apply the starter syllabus; it does not overwrite their activity. Customize or generate a role-specific batch using the [editable prompt / external Markdown workflow](SYLLABUS.md).
+
+## Working in Excel
+
+Export **Settings → Excel tracker**, edit plain-value data sheets, then import for a reviewed reconciliation. Dashboard is first; Profile, Syllabus/Resources, all trackers and long source/prompt documents are included. Same-workspace conflicting edits are rejected, not silently overwritten. Mark `_delete=YES` for explicit deletions; merely removing a row does not delete the app record. Export fresh after applying. A different-workspace import requires replacement confirmation. Full workbooks include hidden personal data/assets—do not treat them as sanitized shareable progress reports. [Full contract](DATA.md).
+
 ## Daily: under two minutes of administration
 
 1. Work in a meaningful block, then write one Quick log with duration and result.

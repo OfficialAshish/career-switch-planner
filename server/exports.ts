@@ -1,10 +1,11 @@
+import { isDeepStrictEqual } from 'node:util';
 import ExcelJS from 'exceljs';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { randomUUID } from 'node:crypto';
 import { applyOperations, proposalSchema, type State, type Operation } from '../shared/schema.js';
 import { planning, localDay, nextReview } from '../shared/planner.js';
 
-const tables = [
+export const tables = [
   [
     'Tasks',
     'task',
@@ -67,12 +68,48 @@ const tables = [
   ],
   ['Sources', 'source', 'sources', ['id', 'title', 'url', 'excerpt', 'checkedAt', 'notes']],
   ['Readiness', 'gate', 'gates', ['id', 'area', 'criteria', 'status', 'evidence']],
+  [
+    'Syllabus',
+    'topic',
+    'topics',
+    [
+      'id',
+      'title',
+      'area',
+      'track',
+      'objective',
+      'prerequisites',
+      'taskId',
+      'status',
+      'evidence',
+      'notes',
+      'updatedAt',
+    ],
+  ],
 ] as const;
 const arrays = ['prerequisites', 'tags', 'attachments', 'followups'];
-export async function workbook(state: State) {
+function textParts(value: string) {
+  const parts: string[] = [];
+  for (let at = 0; at < value.length;) {
+    let end = Math.min(value.length, at + 30000);
+    const code = value.charCodeAt(end - 1);
+    if (end < value.length && code >= 0xd800 && code <= 0xdbff) end--;
+    parts.push(value.slice(at, end));
+    at = end;
+  }
+  return parts.length ? parts : [''];
+}
+export async function workbook(
+  state: State,
+  portable: { images: Record<string, string>; researchRuns: unknown[] } = {
+    images: {},
+    researchRuns: [],
+  },
+) {
   const w = new ExcelJS.Workbook();
   w.creator = 'Career Switch Planner';
   w.created = new Date();
+  const d = w.addWorksheet('Dashboard');
   const guide = w.addWorksheet('Start here');
   guide.columns = [{ width: 27 }, { width: 100 }];
   guide.addRows([
@@ -83,15 +120,15 @@ export async function workbook(state: State) {
     ],
     [
       'Import scope',
-      'Import matches sheet and header names below. Stable IDs update records; new IDs add records. Blank rows ignored. No deletion. Preview before applying.',
+      'Export → edit plain data sheets → import → review → apply. Stable IDs reconcile records using a three-way baseline; conflicting app/Excel edits are rejected. Missing rows do not delete records. Set _delete to YES to explicitly delete; dangling references are rejected. No background/live sync.',
     ],
     [
       'Important',
-      'Excel is a tracker exchange, not a full backup. Images and provider settings are not embedded. Use the JSON backup to move all workspace data and images.',
+      'All workspace records, resume source, prompts, attached images and saved research runs travel in this workbook. Keys, compiler binaries and cached PDFs never do. Hidden __Portable holds the baseline/assets: keep it intact. Limits: 10 MB XLSX; use JSON/data-folder backups for larger workspaces.',
     ],
     [
       'Lists',
-      'prerequisites, tags, attachments and followups use JSON arrays, e.g. ["python"]. Preserve IDs. Numeric/date values must retain their types.',
+      'prerequisites, tags, attachments and followups are JSON arrays. Resources has one row per learning link. Resume source / Prompts split long text into numbered 30,000-character parts: preserve order and IDs. Profile is field/value. Dates use YYYY-MM-DD.',
     ],
     [
       'Formula safety',
@@ -106,28 +143,61 @@ export async function workbook(state: State) {
       'No invented practice or progress. Readiness gates require evidence. Dates are planning estimates, not job guarantees.',
     ],
   ]);
-  const d = w.addWorksheet('Dashboard');
-  d.columns = [{ width: 33 }, { width: 28 }, { width: 75 }];
+  d.columns = [{ width: 28 }, { width: 20 }, { width: 58 }];
   const p = planning(state);
   const n = state.sessions.length + 1;
   const sum = (track?: string) =>
     track
-      ? `SUMIF(Sessions!D2:D${Math.max(2, n)},"${track}",Sessions!C2:C${Math.max(2, n)})/60`
-      : `SUM(Sessions!C2:C${Math.max(2, n)})/60`;
+      ? `SUMIF(Sessions!D2:D20001,"${track}",Sessions!C2:C20001)/60`
+      : `SUM(Sessions!C2:C20001)/60`;
   d.addRows([
     ['YOUR CONTROL ROOM', 'Value', 'Meaning'],
-    ['Exported', localDay(), 'Snapshot; app computes live weekly forecasts'],
-    ['Weekly capacity', state.profile.weeklyHours, 'Hours, editable in app settings'],
+    [
+      'Exported',
+      localDay(),
+      'Export date; formulas update data-sheet totals. App recomputes detailed forecasts on import',
+    ],
+    [
+      'Weekly capacity',
+      { formula: 'Profile!B9', result: state.profile.weeklyHours },
+      'Hours; edit weeklyHours in Profile',
+    ],
     [
       'All-time hours',
       { formula: sum(), result: state.sessions.reduce((a, s) => a + s.minutes, 0) / 60 },
       'Session time only; no double counting',
     ],
-    ['This week', p.actualMinutes / 60, 'Monday-start local calendar week'],
-    ['Remaining work', p.remainingMinutes / 60, 'Hours, includes blocked work'],
-    ['Forecast', p.forecast || '—', 'Estimate only; depends on scope/capacity'],
-    ['Evidence gates', `${p.verifiedGates}/${state.gates.length}`, 'Not an offer probability'],
-    ...['DSA', 'SQL', 'Backend', 'AI', 'Systems', 'Interview', 'Career'].map((t) => [
+    [
+      'This week',
+      {
+        formula:
+          'SUMIFS(Sessions!C2:C20001,Sessions!B2:B20001,">="&TEXT(TODAY()-WEEKDAY(TODAY(),2)+1,"yyyy-mm-dd"),Sessions!B2:B20001,"<="&TEXT(TODAY(),"yyyy-mm-dd"))/60',
+        result: p.actualMinutes / 60,
+      },
+      'Monday-start calendar week; session dates are ISO text',
+    ],
+    [
+      'Remaining work',
+      {
+        formula: 'SUMIF(Tasks!E2:E20001,"<>done",Tasks!D2:D20001)/60',
+        result: p.remainingMinutes / 60,
+      },
+      'Planned estimate hours; includes blocked work, not observed velocity',
+    ],
+    [
+      'Forecast (app snapshot)',
+      p.forecast || '—',
+      'Detailed dependency/velocity forecast is recalculated in the app on import',
+    ],
+    [
+      'Evidence gates',
+      {
+        formula: 'COUNTIF(Readiness!D2:D20001,"Verified")&"/"&COUNTA(Readiness!A2:A20001)',
+        result: `${p.verifiedGates}/${state.gates.length}`,
+      },
+      'Not an offer probability',
+    ],
+    ...['DSA', 'SQL', 'Backend', 'AI', 'Systems', 'Interview', 'Career', 'Role'].map((t) => [
       `${t} total hours`,
       {
         formula: sum(t),
@@ -136,6 +206,131 @@ export async function workbook(state: State) {
       'All-time session hours',
     ]),
   ]);
+  d.addRows([
+    [
+      'Outcomes done',
+      {
+        formula: 'COUNTIF(Tasks!E2:E20001,"done")',
+        result: state.tasks.filter((t) => t.status === 'done').length,
+      },
+      'Completed outcomes',
+    ],
+    [
+      'Topics explain-ready',
+      {
+        formula: 'COUNTIF(Syllabus!H2:H20001,"Explain-ready")',
+        result: state.topics.filter((t) => t.status === 'Explain-ready').length,
+      },
+      'Self-assessed; record evidence',
+    ],
+    [
+      'Topics total',
+      { formula: 'COUNTA(Syllabus!A2:A20001)', result: state.topics.length },
+      'Includes all learning areas',
+    ],
+    [
+      'Practice independent',
+      {
+        formula:
+          'COUNTIF(Practice!I2:I20001,"Independent")+COUNTIF(Practice!I2:I20001,"Explain-ready")',
+        result: state.questions.filter((q) => ['Independent', 'Explain-ready'].includes(q.status))
+          .length,
+      },
+      'DSA + SQL',
+    ],
+    ...(
+      [
+        'Notes',
+        'Projects',
+        'Claims',
+        'Interview',
+        'Applications',
+        'Sources',
+        'Readiness',
+        'Attempts',
+        'Resources',
+        'Resume source',
+        'Prompts',
+      ] as const
+    ).map((name) => [
+      name + ' rows',
+      {
+        formula: `COUNTA('${name}'!A2:A30001)`,
+        result:
+          name === 'Resources'
+            ? state.topics.reduce((n, t) => n + t.resources.length, 0)
+            : name === 'Resume source'
+              ? state.resumeDocuments.reduce((n, d) => n + textParts(d.source).length, 0)
+              : name === 'Prompts'
+                ? state.promptTemplates.reduce((n, d) => n + textParts(d.body).length, 0)
+                : (
+                    {
+                      Notes: state.notes.length,
+                      Projects: state.projects.length,
+                      Claims: state.claims.length,
+                      Interview: state.stories.length,
+                      Applications: state.jobs.length,
+                      Sources: state.sources.length,
+                      Readiness: state.gates.length,
+                      Attempts: state.attempts.length,
+                    } as Record<string, number>
+                  )[name],
+      },
+      'Count of data rows; long documents can span parts',
+    ]),
+    [
+      'Budget-only forecast',
+      {
+        formula: 'IF(B3>0,TEXT(TODAY()+ROUNDUP(B6/B3*7,0),"yyyy-mm-dd"),"Set capacity")',
+        result: p.forecast || '—',
+      },
+      'Rough estimate from remaining hours/capacity only; not the app dependency/velocity model',
+    ],
+    [
+      'Important',
+      'Data parity, not an executable app',
+      'Excel does not run AI, research, video playback or LaTeX compilation. Formula forecasts are not hiring promises.',
+    ],
+  ]);
+  const profile = w.addWorksheet('Profile');
+  profile.columns = [
+    { header: 'field', width: 28 },
+    { header: 'value', width: 100 },
+  ];
+  Object.entries(state.profile).forEach(([k, v]) => profile.addRow([k, v]));
+  const capacityRow = Object.keys(state.profile).indexOf('weeklyHours') + 2;
+  d.getCell('B3').value = { formula: `Profile!B${capacityRow}`, result: state.profile.weeklyHours };
+  const resources = w.addWorksheet('Resources');
+  resources.columns = ['topicId', 'index', 'title', 'url', 'kind', 'notes'].map((header) => ({
+    header,
+    width: header === 'url' ? 60 : 32,
+  }));
+  state.topics.forEach((t) =>
+    t.resources.forEach((r, i) => resources.addRow([t.id, i, r.title, r.url, r.kind, r.notes])),
+  );
+  for (const [name, key, field] of [
+    ['Resume source', 'resumeDocuments', 'source'],
+    ['Prompts', 'promptTemplates', 'body'],
+  ] as const) {
+    const sheet = w.addWorksheet(name);
+    sheet.columns = ['id', 'title', 'part', field, 'updatedAt', '_delete'].map((header) => ({
+      header,
+      width: header === field ? 100 : 28,
+    }));
+    for (const doc of state[key]) {
+      const body = doc[field as keyof typeof doc];
+      const str = String(body);
+      textParts(str).forEach((part, i) =>
+        sheet.addRow([doc.id, doc.title, i + 1, part, doc.updatedAt, '']),
+      );
+    }
+  }
+  const manifest = w.addWorksheet('__Portable', { state: 'veryHidden' });
+  manifest.addRow(['career-workbook-v2']);
+  const encoded = JSON.stringify({ format: 'career-workbook', version: 2, state, ...portable });
+  if (Buffer.byteLength(encoded) > 28 * 1024 * 1024)
+    throw new Error('Workbook portable data exceeds 28 MB. Use a stopped data-folder copy.');
+  textParts(encoded).forEach((part) => manifest.addRow([part]));
   for (const [name, , key, headers] of tables) {
     const s = w.addWorksheet(name);
     s.columns = headers.map((h) => ({
@@ -161,6 +356,7 @@ export async function workbook(state: State) {
           ]),
         ),
       );
+    s.getCell(1, headers.length + 1).value = '_delete';
     s.autoFilter = {
       from: { row: 1, column: 1 },
       to: { row: Math.max(1, s.rowCount), column: headers.length },
@@ -181,12 +377,14 @@ export async function workbook(state: State) {
           formulae: ['"Not started,Learning,Independent,Explain-ready"'],
         };
     if (name === 'Practice') {
-      s.getCell(1, 11).value = 'Next review (snapshot)';
-      s.getColumn(11).width = 24;
-      state.questions.forEach((q, i) => (s.getCell(i + 2, 11).value = nextReview(state, q) || ''));
+      s.getCell(1, 12).value = 'Next review (snapshot)';
+      s.getColumn(12).width = 24;
+      state.questions.forEach((q, i) => (s.getCell(i + 2, 12).value = nextReview(state, q) || ''));
     }
   }
   for (const s of w.worksheets) {
+    if (s.name === '__Portable') continue;
+    s.views = [{ state: 'frozen', ySplit: 1 }];
     s.getRow(1).font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
     s.getRow(1).height = 32;
     s.getRow(1).eachCell(
@@ -194,7 +392,7 @@ export async function workbook(state: State) {
     );
     s.eachRow((r, i) => {
       if (i > 1) {
-        r.height = s.name === 'Start here' ? 58 : s.name === 'Dashboard' ? 28 : 48;
+        r.height = s.name === 'Start here' ? 58 : s.name === 'Dashboard' ? 26 : 48;
         r.eachCell((c) => {
           c.font = { name: 'Calibri', size: 11, color: { argb: 'FF203544' } };
           c.alignment = { vertical: 'top', wrapText: true };
@@ -206,7 +404,7 @@ export async function workbook(state: State) {
     });
     s.pageSetup = {
       paperSize: 9,
-      orientation: 'landscape',
+      orientation: s.name === 'Dashboard' ? 'portrait' : 'landscape',
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: ['Start here', 'Dashboard'].includes(s.name) ? 1 : 0,
@@ -214,7 +412,20 @@ export async function workbook(state: State) {
     };
     s.pageSetup.printArea = `A1:${s.getColumn(s.columnCount).letter}${s.rowCount}`;
   }
-  return Buffer.from(await w.xlsx.writeBuffer());
+  // Excel cell strings cannot exceed 32767 characters. Long source/prompt text is chunked above.
+  for (const sheet of w.worksheets)
+    sheet.eachRow((row) =>
+      row.eachCell((cell) => {
+        if (typeof cell.value === 'string' && cell.value.length > 32767)
+          throw new Error(
+            `${sheet.name}: cell exceeds Excel text limit; shorten it or use JSON backup.`,
+          );
+      }),
+    );
+  const output = Buffer.from(await w.xlsx.writeBuffer());
+  if (output.length > 10 * 1024 * 1024)
+    throw new Error('Workbook exceeds 10 MB; use JSON backup or a stopped data-folder copy.');
+  return output;
 }
 export function guardXlsx(buffer: Buffer) {
   // Read ZIP central directory before XML inflation. Reject ZIP64, encryption, extreme compression and excessive entries.
@@ -296,9 +507,15 @@ export async function importWorkbook(buffer: Buffer, state: State) {
         if (['number', 'minutes', 'estimateMinutes'].includes(h)) v = Number(v);
         value[h] = v;
       }
+      if (kind === 'topic')
+        value.resources = state.topics.find((t) => t.id === value.id)?.resources || [];
+      const normalized = proposalSchema.parse({
+        summary: 'Workbook row',
+        operations: [{ kind, value }],
+      }).operations[0].value;
       const existing = (state[key] as any[]).find((v) => v.id === value.id);
-      if (!existing || JSON.stringify(existing) !== JSON.stringify(value))
-        ops.push({ kind, value } as Operation);
+      if (!existing || !isDeepStrictEqual(existing, normalized))
+        ops.push({ kind, value: normalized } as Operation);
       if (ops.length > 1000) throw new Error('Import at most 1,000 changed rows at once.');
     }
   }

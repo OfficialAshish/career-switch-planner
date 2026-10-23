@@ -26,7 +26,7 @@ Linux build workspace; Node 24.22.1, npm 11.19.1, system Chromium. Tests use iso
 - Full JSON/image portable backup, remapped restore, raster rejection, traversal rejection.
 - Mock Ollama protocol, key absent from persisted settings/output, no mutation from generation alone.
 - Browser: quick-log review/apply, persistent reload, note creation, practice attempt, profile/capacity, current versus planned resume visibility.
-- All ten routes at desktop 1440px/mobile 390px, plus relevant dialogs/error/navigation/theme states in final review.
+- All eleven routes at desktop 1440px/mobile 390px, plus relevant dialogs/error/navigation/theme states in final review.
 
 ## Not verified / not promised
 
@@ -49,3 +49,12 @@ CI results and final remote SHA must be checked on the repository, not inferred 
 - Keyless DuckDuckGo returned a challenge in the test environment; Bing RSS fallback returned real results and a page was retrieved. These are best-effort integrations, not a supported search-service SLA. No Brave key or paid model was tested.
 - Both generic resume templates compiled with the real native compiler. The owner-specific latest attachment was separately rendered as a private one-page editable source/PDF, never public test data. It retains owner wording and placeholder links; it is not an independent fact check.
 - A fresh public clone at `6da0713` passed locked installation, formatting, 18 tests, build, 5 browser journeys and shell launcher smoke. Check Actions for the newest pushed revision; older green runs do not prove later changes.
+
+## v0.3 additional evidence
+
+- New coverage exercises the topic/Markdown contract, stale responses, duplicate IDs, cycles, unsafe URLs, old schema defaults, stable workspace identity migration, full workbook records and long Unicode source/prompt preservation.
+- Workbook tests cover semantic no-op round-trip, profile/resource/source/prompt edits, conservative three-way conflicts, unchanged app edits, explicit deletions, dangling references, malformed part sequencing, formula rejection, portable raster-image transfer and different-workspace replacement confirmation.
+- Browser suite now covers **11 routes** at desktop/mobile, manual syllabus evidence/progress and persistence, editable context prompts, external Markdown preview/apply, reviewed Excel changes and actual sidebar overflow on a 390×420 screen.
+- A synthetic exported workbook was opened/recalculated/resaved through local **LibreOffice**, then imported: **zero unintended record changes**, all 33 topics retained, capacity formula cached as 19 and hidden baseline retained. LibreOffice changes veryHidden to hidden, which the import tolerates. Microsoft Excel and Google Sheets were not directly exercised.
+- Suggested starter resource locations were selected from known official documentation/course pages; they are labeled suggestions and were **not all fetched/checked live**. A model or strict schema cannot guarantee resource quality or career readiness.
+- See PROGRESS for exact latest counts/revision. New AI syllabus generation uses a local synthetic structured-response provider; this verifies protocol and safety checks, not a real model's planning quality.

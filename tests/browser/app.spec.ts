@@ -61,6 +61,7 @@ test('all routes fit desktop and mobile; capture review artifacts', async ({ pag
     'Applications',
     'Research',
     'Settings',
+    'Syllabus',
   ];
   const failures: string[] = [];
   page.on('pageerror', (e) => failures.push(e.message));

@@ -64,3 +64,7 @@ The synthesis mode requests up to **8192 output tokens** (other modes 4096); Oll
 The model itself has no shell/filesystem/browser tools. The server orchestrates the fixed search/read steps and passes excerpts as untrusted data. Prompts are built in at `shared/prompts.ts`; query instructions live in `server/ai.ts`. Change them in source and rebuild if needed. A different career does not require editing these prompts first.
 
 Full JSON backups include research history; restored unapplied runs must be regenerated. Recovery of the workspace alone is separate from run history. Provider/search keys are never included.
+
+## Editable syllabus prompts and external AI
+
+Syllabus has a separate context-aware prompt editor and strict Markdown exchange for use without any API. In-app generation and external imports use the same new-record-only validation; neither creates completed activity. Source-grounded online research remains a separate consent-based workflow. See [Syllabus](SYLLABUS.md).

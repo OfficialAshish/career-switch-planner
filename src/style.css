@@ -1295,3 +1295,37 @@ summary {
 .latex-studio > details {
   max-width: none;
 }
+
+/* The local sidebar remains reachable on short screens and with added sections. */
+.shell > aside {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.shell > aside > .brand,
+.shell > aside > nav,
+.shell > aside > .local-status {
+  flex-shrink: 0;
+}
+.syllabus .cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.syllabus .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.syllabus small {
+  display: block;
+  color: var(--muted);
+}
+.syllabus pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 450px;
+  overflow: auto;
+}

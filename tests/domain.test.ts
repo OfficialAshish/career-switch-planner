@@ -122,3 +122,31 @@ test('research blocks private/reserved IPs and provider endpoints reject secrets
   );
   validateEndpoint({ type: 'ollama', endpoint: 'http://127.0.0.1:11434', model: 'local-model' });
 });
+
+test('pre-v0.3 workspace identity migration is stable across restarts and preserves original bytes', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'career-migration-'));
+  try {
+    const old: any = initialState();
+    delete old.workspaceId;
+    delete old.topics;
+    delete old.promptTemplates;
+    const file = path.join(root, 'workspace.json');
+    await writeFile(file, JSON.stringify(old));
+    const first = new Store(root);
+    await first.init();
+    const identity = first.state.workspaceId;
+    assert.ok(identity);
+    await first.close();
+    const second = new Store(root);
+    await second.init();
+    assert.equal(second.state.workspaceId, identity);
+    assert.equal(second.state.topics.length, 0);
+    await second.close();
+    const { readdir } = await import('node:fs/promises');
+    const original = (await readdir(root)).find((f) => f.includes('.pre-v03-'));
+    assert.ok(original);
+    assert.deepEqual(JSON.parse(await readFile(path.join(root, original), 'utf8')), old);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

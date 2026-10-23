@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -88,6 +89,25 @@ export function plannedState(state: State, run: ResearchRun): State {
   let current = structuredClone(state);
   if (run.input.replaceStarter) {
     const seed = initialState();
+    const seedTopics = new Map(seed.topics.map((t) => [t.id, t]));
+    const removeTopics = new Set(
+      current.topics
+        .filter((t) => {
+          const original = seedTopics.get(t.id);
+          return (
+            original && isDeepStrictEqual({ ...t, updatedAt: '' }, { ...original, updatedAt: '' })
+          );
+        })
+        .map((t) => t.id),
+    );
+    let topicChanged = true;
+    while (topicChanged) {
+      topicChanged = false;
+      for (const t of current.topics)
+        if (!removeTopics.has(t.id))
+          for (const dep of t.prerequisites) if (removeTopics.delete(dep)) topicChanged = true;
+    }
+    current.topics = current.topics.filter((t) => !removeTopics.has(t.id));
     const template = new Set(seed.tasks.map((t) => t.id));
     const remove = new Set(
       current.tasks
@@ -100,6 +120,7 @@ export function plannedState(state: State, run: ResearchRun): State {
         )
         .map((t) => t.id),
     );
+    for (const topic of current.topics) if (topic.taskId) remove.delete(topic.taskId);
     // Keep any starter required by a preserved record, transitively.
     let changed = true;
     while (changed) {

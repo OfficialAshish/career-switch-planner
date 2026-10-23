@@ -1,3 +1,4 @@
+import { starterTopics } from '../shared/syllabus.js';
 import { randomUUID } from 'node:crypto';
 import catalog from '../seed/questions.json' with { type: 'json' };
 import { parseState, type State, type Task, type Track } from '../shared/schema.js';
@@ -199,7 +200,7 @@ export function initialState(): State {
       ['Why this role?', 'What team environment helps you succeed?'],
     ],
   ];
-  return parseState({
+  const state = parseState({
     schemaVersion: 1,
     revision: 0,
     updatedAt: now,
@@ -243,4 +244,6 @@ export function initialState(): State {
       evidence: '',
     })),
   });
+  state.topics = starterTopics(state);
+  return parseState(state);
 }

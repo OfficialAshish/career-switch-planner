@@ -60,7 +60,12 @@ export class Store {
     }
     this.ownsLock = true;
     try {
-      this.state = parseState(JSON.parse(await fs.readFile(this.file, 'utf8')));
+      const raw = JSON.parse(await fs.readFile(this.file, 'utf8'));
+      this.state = parseState(raw);
+      if (!raw.workspaceId) {
+        await fs.copyFile(this.file, this.file + `.pre-v03-${Date.now()}`);
+        await atomicWrite(this.file, JSON.stringify(this.state, null, 2));
+      }
     } catch (e: any) {
       if (e.code === 'ENOENT') {
         this.state = initialState();

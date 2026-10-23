@@ -29,18 +29,19 @@ _Illustration uses synthetic test activity. Your own workspace starts with no lo
 
 ## What you can do
 
-| Workspace           | Purpose                                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Today               | One-line quick capture, session time, next outcome, revision queue                                        |
-| Plan                | Editable competencies, prerequisites and estimates; capacity-limited weekly queue; pace-adjusted forecast |
-| Practice            | 150 categorized DSA + 50 SQL links, difficulty filters, attempts and spaced recall                        |
-| Notes               | Categories, tags, searchable explanations and local raster screenshots                                    |
-| Projects & evidence | Project progress and explicit evidence-backed readiness gates                                             |
-| Resume              | Verified-claim editor plus editable LaTeX studio, actual live PDF, clean download and DOCX                |
-| Interview           | Editable truthful stories, follow-ups, five professional unknown-answer styles and mock structure         |
-| Applications        | JD, role/location eligibility, stage, notes and next action                                               |
-| Research            | Role/JD-aware search → retrieval → reviewed plan; saved retryable runs and source evidence                |
-| Settings            | Weekly capacity, optional goal/notice, appearance, AI, imports/exports and recovery points                |
+| Workspace           | Purpose                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Today               | One-line quick capture, session time, next outcome, revision queue                                           |
+| Plan                | Editable competencies, prerequisites and estimates; capacity-limited weekly queue; pace-adjusted forecast    |
+| Practice            | 150 categorized DSA + 50 SQL links, difficulty filters, attempts and spaced recall                           |
+| Syllabus            | Python, system design, backend and AI concepts; resources, progress, editable AI prompts and Markdown import |
+| Notes               | Categories, tags, searchable explanations and local raster screenshots                                       |
+| Projects & evidence | Project progress and explicit evidence-backed readiness gates                                                |
+| Resume              | Verified-claim editor plus editable LaTeX studio, actual live PDF, clean download and DOCX                   |
+| Interview           | Editable truthful stories, follow-ups, five professional unknown-answer styles and mock structure            |
+| Applications        | JD, role/location eligibility, stage, notes and next action                                                  |
+| Research            | Role/JD-aware search → retrieval → reviewed plan; saved retryable runs and source evidence                   |
+| Settings            | Weekly capacity, optional goal/notice, appearance, AI, imports/exports and recovery points                   |
 
 ### Dynamic, not deadline-driven
 
@@ -58,11 +59,17 @@ Settings → choose **local Ollama** or an **OpenAI-compatible API**, endpoint a
 
 AI can propose logs, JD-specific tasks, resume wording, interview drills and summaries of **supplied** research. Every proposal is schema-validated and explicitly reviewed before saving. No model shell commands, arbitrary file tools or silent changes. For bounded online search and planning, use **Research → Research & generate plan**; consent, sources, failures and retries stay visible. Workspace context is **off by default on each request**. Provider keys are memory-only or supplied through your server environment, never returned in the UI or exported. See [AI setup and privacy](docs/AI.md).
 
+### Syllabus beyond DSA, with or without an AI API
+
+Track **33 starter concepts** spanning Python before DSA, SQL/backend, system design and practical AI/LLM/chatbots. Topics include exercises/explanation checks, prerequisites, resource links, progress and evidence. Link them to Plan outcomes so logged time is counted once. Adapt the starter scope to your baseline; it is not an exhaustive readiness guarantee.
+
+**Syllabus → Build fresh context prompt** fills saved role/capacity/outcome context. Edit it, use your configured AI, or copy/download it to another AI and import the response Markdown. All imported syllabus records are validated, previewed and initially unstarted; no API is needed for manual tracking or Markdown import. See [syllabus and prompt workflow](docs/SYLLABUS.md).
+
 ### Portable, not locked in
 
 - **Full JSON backup:** workspace + referenced images + LaTeX documents + research runs. Restore shows a replacement preview and keeps the previous revision first.
-- **Excel tracker:** editable data sheets plus a formatted dashboard. Upload to Google Drive → Open with Google Sheets → Save as Google Sheets. Each friend keeps a separate file and shares a viewer/commenter link. No automatic cross-file sync.
-- **Excel import:** preview changed plain-value rows from this app’s export; upsert by stable ID, no deletion. Images, provider settings and the profile do not import through Excel. Legacy tracker columns are not silently guessed. See [data format and spreadsheet scope](docs/DATA.md).
+- **Excel tracker:** Dashboard first, editable profile, all tracking records, syllabus/resources, long LaTeX source and saved prompts. Attached images and research archives travel in a hidden portable sheet. Treat the workbook as personal data, not a sanitized shareable report.
+- **Excel reconciliation:** export → edit → import → review → apply. Three-way baseline checks reject conflicting app/Excel edits. Missing rows are preserved; `_delete=YES` explicitly deletes with reference checks. A different-workspace workbook requires full-replacement confirmation. No live sync, provider keys, compiler cache or Excel execution of AI. See [data format and spreadsheet scope](docs/DATA.md).
 - **Resume:** import and edit your existing `.tex`, install the optional local compiler, preview the actual PDF as you edit and download it with **no app watermark**. Compact classic and blue templates are included. Structured claim exports remain available. See [LaTeX studio](docs/LATEX.md). Verify all factual claims before sending.
 
 ## First 15 minutes

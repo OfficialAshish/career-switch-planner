@@ -180,10 +180,44 @@ export const resumeDocumentSchema = z
     updatedAt: short,
   })
   .strict();
+export const topicSchema = z
+  .object({
+    id,
+    title: short.min(1),
+    area: short.min(1),
+    track,
+    objective: text,
+    prerequisites: z.array(id).max(20),
+    taskId: z.union([id, z.literal('')]),
+    status: z.enum(['Not started', 'Learning', 'Practicing', 'Explain-ready']),
+    evidence: text,
+    notes: text,
+    resources: z
+      .array(
+        z
+          .object({
+            title: short.min(1),
+            url: url.refine(Boolean),
+            kind: z.enum(['Docs', 'Video', 'Course', 'Exercise']),
+            notes: short,
+          })
+          .strict(),
+      )
+      .max(10),
+    updatedAt: short,
+  })
+  .strict();
+export const promptTemplateSchema = z
+  .object({ id, title: short.min(1), body: z.string().max(60000), updatedAt: short })
+  .strict();
+export type Topic = z.infer<typeof topicSchema>;
 export const stateSchema = z
   .object({
+    topics: z.array(topicSchema).max(2000).default([]),
+    promptTemplates: z.array(promptTemplateSchema).max(50).default([]),
     resumeDocuments: z.array(resumeDocumentSchema).max(20).default([]),
     schemaVersion: z.literal(1),
+    workspaceId: id.default(() => crypto.randomUUID()),
     revision: z.number().int().nonnegative(),
     updatedAt: short,
     profile: profileSchema,
@@ -206,6 +240,9 @@ export type Question = z.infer<typeof questionSchema>;
 export type Track = z.infer<typeof track>;
 
 export const operationSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('topic'), value: topicSchema }).strict(),
+  z.object({ kind: z.literal('promptTemplate'), value: promptTemplateSchema }).strict(),
+  z.object({ kind: z.literal('resumeDocument'), value: resumeDocumentSchema }).strict(),
   z.object({ kind: z.literal('session'), value: sessionSchema }).strict(),
   z.object({ kind: z.literal('attempt'), value: attemptSchema }).strict(),
   z.object({ kind: z.literal('note'), value: noteSchema }).strict(),
@@ -229,6 +266,8 @@ export const proposalSchema = z
 export type Proposal = z.infer<typeof proposalSchema>;
 export function validateReferences(state: State): State {
   const groups = [
+    state.topics,
+    state.promptTemplates,
     state.resumeDocuments,
     state.tasks,
     state.sessions,
@@ -263,6 +302,23 @@ export function validateReferences(state: State): State {
   state.tasks.forEach(visit);
   for (const session of state.sessions)
     if (session.taskId && !tasks.has(session.taskId)) throw new Error('Linked task does not exist');
+  const topics = new Map(state.topics.map((t) => [t.id, t]));
+  const active = new Set<string>(),
+    done = new Set<string>();
+  function visitTopic(t: Topic) {
+    if (active.has(t.id)) throw new Error('Syllabus prerequisites contain a cycle');
+    if (done.has(t.id)) return;
+    active.add(t.id);
+    if (t.taskId && !tasks.has(t.taskId)) throw new Error('Syllabus linked task does not exist');
+    for (const dep of t.prerequisites) {
+      const parent = topics.get(dep);
+      if (!parent) throw new Error('Syllabus prerequisite does not exist');
+      visitTopic(parent);
+    }
+    active.delete(t.id);
+    done.add(t.id);
+  }
+  state.topics.forEach(visitTopic);
   const questions = new Set(state.questions.map((q) => q.id));
   for (const attempt of state.attempts)
     if (!questions.has(attempt.questionId)) throw new Error('Practice question does not exist');
@@ -274,6 +330,9 @@ export function parseState(input: unknown): State {
 export function applyOperations(current: State, ops: Operation[]): State {
   const next = structuredClone(current);
   const keys = {
+    topic: 'topics',
+    promptTemplate: 'promptTemplates',
+    resumeDocument: 'resumeDocuments',
     session: 'sessions',
     attempt: 'attempts',
     note: 'notes',

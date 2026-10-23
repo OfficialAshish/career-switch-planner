@@ -1,3 +1,34 @@
+# Engineering progress — v0.3
+
+## New delivered scope
+
+- **Complete workbook data portability:** Dashboard-first summary, all tracking collections, profile, syllabus/resources, chunked exact LaTeX source and saved prompts, hidden baseline plus referenced raster images and saved research archives.
+- **Reviewed reconciliation:** three-way same-workspace comparisons, conservative conflict rejection, explicit deletions/reference validation, stale revision checks and consented different-workspace replacement. Missing rows never silently delete work. No live/background sync.
+- **Syllabus beyond DSA:** 33 unstarted practical concepts, role-customizable areas, dependencies, evidence/status, docs/course/video links and links to existing Plan outcomes. A detailed concept does not create a second session/estimate automatically.
+- **Any-AI exchange:** editable bounded-context prompts, copy/download, saved prompt documents, configured structured provider generation, external Markdown JSON import, new-record-only validation and explicit review/apply. No API required for import/manual tracking.
+- **Scrollable navigation:** fixed sidebar scrolls on short/mobile viewports; native topic dialogs keep keyboard focus and report errors in-dialog.
+- **Compatibility:** old states gain empty topic/prompt collections and persistent workspace identity with the pre-migration file preserved. Reviewed research replacement discards only unchanged unused starter topics, preserving custom/progressed topics and their prerequisites/tasks.
+
+## Local verification
+
+- Node 24 / Linux: formatting, client/server TypeScript, **31 domain/API/export/protocol tests**, production build, **7 browser journeys**, shell launcher smoke and production dependency audit pass (zero vulnerabilities at the registry snapshot).
+- Browser suite includes desktop/mobile overflow capture of all **11 routes**, topic editing/persistence, saved prompts, external Markdown import/apply, workbook editing/import/apply and short-screen sidebar scrolling.
+- Workbook tests include full-source Unicode chunks, arrays, profile/resources/prompts, app-only edits, overlapping conflicts, same-ID safety, deletions/references, formula rejection, ZIP guards and full cross-workspace transfer with image remapping and explicit confirmation.
+- LibreOffice recalculation/resave → app import: **zero unintended changes**, 33 topics retained, formulas and hidden portable baseline retained. Direct Microsoft Excel / Google Sheets round-trip is **not verified**.
+- AI syllabus protocol is tested with a synthetic local provider, including rejecting manufactured explain-ready status. No real model-quality or paid-key claim.
+- Public-source/privacy scan passes; owner resumes and token files remain outside the repository. Private editable resume ZIP remains a separate handoff.
+- Ubuntu/Windows Actions verification for this new revision must be checked after pushing; prior green v0.2 CI is not proof of v0.3 behavior.
+
+## Honest limits and recovery
+
+See [DATA](DATA.md), [SYLLABUS](SYLLABUS.md) and [VERIFICATION](VERIFICATION.md). Workbook formulas summarize data, not the application's full dependency/velocity engine or AI/compiler execution. Full workbooks contain personal data, including hidden baseline/assets. Keys, provider config, binaries and PDF cache are excluded; large workspaces need JSON or a copy of the stopped data folder. Resource links are suggested, not all live-verified. Preparation and self-reported status do not guarantee hiring readiness.
+
+Clone public main and run start.bat / bash start.sh. Keep external backups; local recovery revisions do not protect against disk loss. Research archive restore is auxiliary to the atomic workspace save; preserve the original import if it reports an archive error.
+
+---
+
+## Earlier release history
+
 # Engineering progress — v0.2
 
 ## Shipped implementation
