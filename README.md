@@ -36,10 +36,10 @@ _Illustration uses synthetic test activity. Your own workspace starts with no lo
 | Practice            | 150 categorized DSA + 50 SQL links, difficulty filters, attempts and spaced recall                        |
 | Notes               | Categories, tags, searchable explanations and local raster screenshots                                    |
 | Projects & evidence | Project progress and explicit evidence-backed readiness gates                                             |
-| Resume              | Current verified claims versus labeled future-state draft; PDF print, DOCX and LaTeX exports              |
+| Resume              | Verified-claim editor plus editable LaTeX studio, actual live PDF, clean download and DOCX                |
 | Interview           | Editable truthful stories, follow-ups, five professional unknown-answer styles and mock structure         |
 | Applications        | JD, role/location eligibility, stage, notes and next action                                               |
-| Research            | Dated sources, pasted evidence and guarded public-page retrieval                                          |
+| Research            | Role/JD-aware search → retrieval → reviewed plan; saved retryable runs and source evidence                |
 | Settings            | Weekly capacity, optional goal/notice, appearance, AI, imports/exports and recovery points                |
 
 ### Dynamic, not deadline-driven
@@ -56,14 +56,14 @@ The **offline parser** proposes a session and a matching practice attempt. Revie
 
 Settings → choose **local Ollama** or an **OpenAI-compatible API**, endpoint and model. For Ollama, a typical endpoint is `http://127.0.0.1:11434`; compatible APIs usually need their documented `/v1` base URL. A model capable of structured JSON is recommended.
 
-AI can propose logs, JD-specific tasks, resume wording, interview drills and summaries of **supplied** research. Every proposal is schema-validated and explicitly reviewed before saving. No shell commands, arbitrary files, automatic browsing or silent changes. Workspace context is **off by default on each request**. Provider keys are memory-only or supplied through your server environment, never returned in the UI or exported. See [AI setup and privacy](docs/AI.md).
+AI can propose logs, JD-specific tasks, resume wording, interview drills and summaries of **supplied** research. Every proposal is schema-validated and explicitly reviewed before saving. No model shell commands, arbitrary file tools or silent changes. For bounded online search and planning, use **Research → Research & generate plan**; consent, sources, failures and retries stay visible. Workspace context is **off by default on each request**. Provider keys are memory-only or supplied through your server environment, never returned in the UI or exported. See [AI setup and privacy](docs/AI.md).
 
 ### Portable, not locked in
 
-- **Full JSON backup:** workspace + referenced images. Restore shows a replacement preview and keeps the previous revision first.
+- **Full JSON backup:** workspace + referenced images + LaTeX documents + research runs. Restore shows a replacement preview and keeps the previous revision first.
 - **Excel tracker:** editable data sheets plus a formatted dashboard. Upload to Google Drive → Open with Google Sheets → Save as Google Sheets. Each friend keeps a separate file and shares a viewer/commenter link. No automatic cross-file sync.
 - **Excel import:** preview changed plain-value rows from this app’s export; upsert by stable ID, no deletion. Images, provider settings and the profile do not import through Excel. Legacy tracker columns are not silently guessed. See [data format and spreadsheet scope](docs/DATA.md).
-- **Resume:** browser print/save PDF, editable DOCX, LaTeX source. Verify all personal and future-state claims before sending.
+- **Resume:** import and edit your existing `.tex`, install the optional local compiler, preview the actual PDF as you edit and download it with **no app watermark**. Compact classic and blue templates are included. Structured claim exports remain available. See [LaTeX studio](docs/LATEX.md). Verify all factual claims before sending.
 
 ## First 15 minutes
 
@@ -89,11 +89,13 @@ If a system Chromium is already installed, set `CHROMIUM_PATH` for browser tests
 
 ### Configuration
 
-| Variable          | Default | Purpose                                                      |
-| ----------------- | ------- | ------------------------------------------------------------ |
-| `PORT`            | `4317`  | Local port, 1024–65535; server always binds 127.0.0.1        |
-| `CAREER_DATA_DIR` | `data`  | Explicit private data-folder override                        |
-| `OPENAI_API_KEY`  | unset   | Optional compatible-provider credential, read only by server |
+| Variable               | Default | Purpose                                                             |
+| ---------------------- | ------- | ------------------------------------------------------------------- |
+| `PORT`                 | `4317`  | Local port, 1024–65535; server always binds 127.0.0.1               |
+| `CAREER_DATA_DIR`      | `data`  | Explicit private data-folder override                               |
+| `OPENAI_API_KEY`       | unset   | Optional compatible-provider credential, read only by server        |
+| `BRAVE_SEARCH_API_KEY` | unset   | Optional supported search API; otherwise best-effort keyless search |
+| `CAREER_TECTONIC_PATH` | unset   | Optional owner-managed local compiler executable                    |
 
 `.env.example` documents names only; `.env` is **not automatically loaded**. Use your shell’s environment. Never commit real keys. Provider endpoint/model are saved under your private data folder; the key entered in the app is not persisted.
 
@@ -101,7 +103,8 @@ If a system Chromium is already installed, set `CHROMIUM_PATH` for browser tests
 
 - [Architecture and trust boundaries](docs/ARCHITECTURE.md)
 - [User guide and weekly workflow](docs/USER-GUIDE.md)
-- [AI setup, prompts and data sharing](docs/AI.md)
+- [AI setup, research workflows, prompts and data sharing](docs/AI.md)
+- [LaTeX source editor, clean PDFs and compiler setup](docs/LATEX.md)
 - [Data formats, Excel and backups](docs/DATA.md)
 - [Security policy](SECURITY.md) · [Privacy](docs/PRIVACY.md)
 - [Recovery and troubleshooting](docs/RECOVERY.md)
@@ -111,7 +114,7 @@ If a system Chromium is already installed, set `CHROMIUM_PATH` for browser tests
 
 ## Scope and limitations
 
-This is a local productivity tool, not a recruiter, autonomous career agent or audited financial/legal adviser. No cloud sync, multi-user accounts, native mobile app, PDF resume ingestion, live salary feed or universal job scraper. Some sources block retrieval; paste an excerpt instead. Workbook exchange is intentionally narrower than a full backup. Data is **not encrypted at rest**; rely on your OS account and disk encryption. Local software with access to your files is outside the server’s isolation boundary.
+This is a local productivity tool, not a recruiter, unbounded autonomous agent or audited financial/legal adviser. No cloud sync, multi-user accounts, native mobile app, PDF resume ingestion, live salary feed or universal job scraper. Some sources block retrieval; paste an excerpt instead. Workbook exchange is intentionally narrower than a full backup. Data is **not encrypted at rest**; rely on your OS account and disk encryption. Local software with access to your files is outside the server’s isolation boundary.
 
 The catalog links to LeetCode; access and premium requirements can change. Problem titles are navigational references, not copied solutions. All projects and metrics must be your own defensible work.
 

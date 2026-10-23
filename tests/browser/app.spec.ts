@@ -145,3 +145,164 @@ test('dialog failures stay visible; screenshot upload and mobile navigation work
   await expect(page.locator('h1')).toBeVisible();
   expect(external).toEqual([]);
 });
+
+test('LaTeX studio preserves imported source, autosaves and renders downloadable PDF', async ({
+  page,
+}) => {
+  page.on('dialog', (dialog) => dialog.accept());
+  const fs = await import('node:fs/promises');
+  const bytes = await fs.readFile('tests/fixtures/clean.pdf');
+  await page.route('**/api/latex/status', (r) =>
+    r.fulfill({ json: { installed: true, busy: false, supported: true, version: 'test' } }),
+  );
+  let compiledSource = '';
+  await page.route('**/api/latex/compile', (r) => {
+    compiledSource = r.request().postDataJSON().source;
+    return r.fulfill({
+      json: {
+        pdf: bytes.toString('base64'),
+        log: 'Synthetic compiler protocol fixture',
+        sourceHash: 'test',
+      },
+    });
+  });
+  await page.goto('/#Resume');
+  await page.getByRole('button', { name: 'LaTeX editor & PDF' }).click();
+  const source =
+    '\\documentclass{article}\r\n\\pagestyle{empty}\r\n\\begin{document}My exact source\\end{document}';
+  await page.getByLabel('Import original .tex').setInputFiles({
+    name: 'original-layout.tex',
+    mimeType: 'text/plain',
+    buffer: Buffer.from(source),
+  });
+  await expect
+    .poll(async () => {
+      const data = await (await page.request.get('/api/state')).json();
+      return data.state.resumeDocuments.find((d: any) => d.title === 'original-layout')?.source;
+    })
+    .toBe(source);
+  await page.getByLabel('I trust this LaTeX source to run locally').check();
+  await page.getByRole('button', { name: 'Compile / retry PDF' }).click();
+  await expect(page.getByRole('img', { name: 'PDF page 1 of 1' })).toBeVisible();
+  expect(compiledSource).toBe(source);
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'Download PDF', exact: true }).click();
+  const download = await downloadPromise;
+  expect(await fs.readFile((await download.path())!)).toEqual(bytes);
+  await page.screenshot({
+    path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'latex-studio-desktop.png'),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.screenshot({
+    path: path.join(process.env.ARTIFACT_DIR || 'test-results/visual', 'latex-studio-mobile.png'),
+    fullPage: true,
+  });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(
+    false,
+  );
+  await page.getByLabel('LaTeX source', { exact: true }).fill(source + '\n% Edited layout');
+  await expect(page.getByText('PDF is out of date', { exact: false })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download PDF', exact: true })).not.toBeVisible();
+  await expect
+    .poll(async () => {
+      const data = await (await page.request.get('/api/state')).json();
+      return data.state.resumeDocuments.find((d: any) => d.title === 'original-layout')?.source;
+    })
+    .toContain('Edited layout');
+  await page.reload();
+  await page.getByRole('button', { name: 'LaTeX editor & PDF' }).click();
+  // The default selection is the first document. Select the imported document explicitly.
+  await page
+    .getByLabel('Resume document', { exact: true })
+    .selectOption({ label: 'original-layout' });
+  await expect(page.getByLabel('LaTeX source', { exact: true })).toHaveValue(/Edited layout/);
+});
+
+test('research planner requires consent and supports saved retry/review flow', async ({ page }) => {
+  let stage = 'failed';
+  let started = false;
+  let applied = false;
+  const run = {
+    id: '55555555-5555-4555-8555-555555555555',
+    input: { goal: 'Urban planner', replaceStarter: true },
+    baseRevision: 0,
+    status: 'failed',
+    stage: 'Saved evidence ready for retry',
+    createdAt: '2026-10-23',
+    updatedAt: '2026-10-23',
+    attempt: 1,
+    queries: ['urban planner requirements'],
+    results: [],
+    sources: [
+      {
+        title: 'Primary guidance',
+        url: 'https://example.org/guide',
+        excerpt: 'Professional source evidence',
+      },
+    ],
+    warnings: [],
+    error: 'Search provider unavailable',
+    proposal: null as any,
+  };
+  await page.route('**/api/research-runs', (r) =>
+    r.fulfill({
+      json: {
+        runs: started
+          ? [
+              {
+                ...run,
+                status: stage,
+                error: stage === 'failed' ? run.error : '',
+                proposal:
+                  stage === 'ready'
+                    ? { summary: 'Role-specific portfolio and policy plan', operations: [] }
+                    : null,
+              },
+            ]
+          : [],
+        search: { engine: 'Synthetic search fixture' },
+      },
+    }),
+  );
+  await page.route('**/api/research-runs/start', (r) => {
+    expect(r.request().postDataJSON().onlineConsent).toBe(true);
+    started = true;
+    return r.fulfill({ status: 202, json: run });
+  });
+  await page.route('**/api/research-runs/retry', (r) => {
+    stage = 'ready';
+    return r.fulfill({ status: 202, json: { ...run, status: 'ready' } });
+  });
+  await page.goto('/#Research');
+  await page.getByText('Target details, JD & research settings', { exact: true }).click();
+  await page.getByLabel('Target role / switching goal').fill('Urban planner');
+  const start = page.getByRole('button', { name: 'Research & generate plan', exact: true });
+  await expect(start).toBeDisabled();
+  await page
+    .getByLabel('Allow online searches and public-page retrieval', { exact: false })
+    .check();
+  await start.click();
+  await expect(page.getByRole('button', { name: 'Retry with saved evidence' })).toBeVisible();
+  await page.getByRole('button', { name: 'Retry with saved evidence' }).click();
+  await expect(page.getByText('Role-specific portfolio and policy plan')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Apply reviewed research plan' })).toBeVisible();
+  await page.screenshot({
+    path: path.join(
+      process.env.ARTIFACT_DIR || 'test-results/visual',
+      'research-planner-desktop.png',
+    ),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.screenshot({
+    path: path.join(
+      process.env.ARTIFACT_DIR || 'test-results/visual',
+      'research-planner-mobile.png',
+    ),
+    fullPage: true,
+  });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(
+    false,
+  );
+});

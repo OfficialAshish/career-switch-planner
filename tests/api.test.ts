@@ -270,3 +270,21 @@ test('manual deletion creates recovery points, rejects references and invalid at
     assert.equal(result.state.revision, 2);
     assert.ok((await (await get('backups')).json()).length >= 2);
   }));
+
+test('LaTeX document API preserves exact source in backups and requires trusted compile consent', async () =>
+  fixture(async ({ post, get, store }: any) => {
+    const source =
+      '\\documentclass{article}\r\n% exact source\r\n\\begin{document}Hello\\end{document}';
+    const document = { id: 'original', title: 'Original layout', source, updatedAt: '2026-10-23' };
+    assert.equal((await post('latex/document', { revision: 0, document })).status, 200);
+    const backup = await (await get('backup')).json();
+    assert.equal(backup.state.resumeDocuments[0].source, source);
+    assert.ok(Array.isArray(backup.researchRuns));
+    assert.equal(
+      (await post('latex/compile', { source, trusted: false, allowNetwork: false })).status,
+      400,
+    );
+    assert.equal((await post('latex/install', { consent: false })).status, 400);
+    assert.equal((await post('latex/document', { revision: 0, document })).status, 409);
+    assert.equal(store.state.resumeDocuments[0].source, source);
+  }));

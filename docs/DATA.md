@@ -55,3 +55,7 @@ Live Google import is not verified by automated tests. Check dropdowns, dates, f
 ## Resume exports
 
 Current mode uses Verified claims; future mode includes Planned/Working claims and a prominent draft warning. Profile summary/employment text is self-entered, not automatically audited. PDF uses browser Print; DOCX is editable and LaTeX is escaped source (compiler not bundled). No ATS ranking/format guarantee. Unicode LaTeX content may need an appropriate engine/font setup. Verify all links and metrics before submitting.
+
+## v0.2 additions
+
+`resumeDocuments` defaults to an empty array in old workspaces and stores complete UTF-8 sources, not regenerated claim exports. Full portable JSON also contains `researchRuns`; old imports default to none. Unapplied restored runs lose their proposal and must regenerate against the current workspace. Excel exchange intentionally excludes these source/run records. Compiler cache/tools are excluded from JSON but retained by a stopped-folder backup. A portable archive is capped at 28 MB; use a stopped-folder backup if larger.

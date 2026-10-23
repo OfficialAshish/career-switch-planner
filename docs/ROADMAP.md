@@ -4,6 +4,8 @@ Prioritize user value and privacy over feature count.
 
 ## Small next improvements
 
+- Multi-file LaTeX assets, richer source editing, research-history archiving UI and stronger source relevance/ranking checks. Current workflows remain bounded and review-required.
+
 1. A reviewed legacy-tracker mapping wizard with sample fixtures, not guessed column conversion.
 2. Dedicated all-session/attempt history editors and undo after manual deletion (current corrections use recent-session editor, record forms, recovery points and Excel).
 3. Modularize route components as they grow; maintain one canonical schema and operation boundary.
@@ -20,4 +22,4 @@ Prioritize user value and privacy over feature count.
 
 ## Deliberately out of current scope
 
-Hosted multi-user SaaS, public server deployment, automated applications, salary prediction, automatic resume fabrication, autonomous browsing, model shell tools, GitHub-token sync and production-grade recruiter databases. Any future remote version requires authentication, authorization, tenancy, hardened upload/SSRF controls and a new threat model.
+Hosted multi-user SaaS, public server deployment, automated applications, salary prediction, automatic resume fabrication, unbounded browsing, model shell tools, GitHub-token sync and production-grade recruiter databases. Any future remote version requires authentication, authorization, tenancy, hardened upload/SSRF controls and a new threat model.

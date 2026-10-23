@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import type { State } from '../shared/schema';
 import type { ResearchInput, ResearchRun } from '../shared/research-contract';
 import { api } from './api';
@@ -14,12 +14,17 @@ export function ResearchPlanner({ state, onState }: { state: State; onState: (s:
     [replace, setReplace] = useState(false),
     [key, setKey] = useState(''),
     [search, setSearch] = useState(''),
+    [serverBusy, setServerBusy] = useState(false),
     [runs, setRuns] = useState<ResearchRun[]>([]),
     [selected, setSelected] = useState(''),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
+  const polling = useRef(true);
   async function refresh() {
     const data = await api('research-runs');
+    polling.current =
+      Boolean(data.search.busy) || data.runs.some((r: ResearchRun) => r.status === 'running');
+    setServerBusy(Boolean(data.search.busy));
     setRuns(data.runs);
     setSearch(data.search.engine);
   }
@@ -29,6 +34,9 @@ export function ResearchPlanner({ state, onState }: { state: State; onState: (s:
       try {
         const data = await api('research-runs');
         if (active) {
+          polling.current =
+            Boolean(data.search.busy) || data.runs.some((r: ResearchRun) => r.status === 'running');
+          setServerBusy(Boolean(data.search.busy));
           setRuns(data.runs);
           setSearch(data.search.engine);
         }
@@ -37,7 +45,9 @@ export function ResearchPlanner({ state, onState }: { state: State; onState: (s:
       }
     }
     void poll();
-    const timer = setInterval(() => void poll(), 2000);
+    const timer = setInterval(() => {
+      if (polling.current) void poll();
+    }, 2000);
     return () => {
       active = false;
       clearInterval(timer);
@@ -56,7 +66,7 @@ export function ResearchPlanner({ state, onState }: { state: State; onState: (s:
     }
   }
   const run = runs.find((r) => r.id === selected) || runs[0];
-  const running = runs.some((r) => r.status === 'running');
+  const running = serverBusy || runs.some((r) => r.status === 'running');
   return (
     <section className="research-planner panel">
       <h2>Research &amp; build my plan</h2>
@@ -115,9 +125,9 @@ export function ResearchPlanner({ state, onState }: { state: State; onState: (s:
         <details>
           <summary>Optional reliable search provider</summary>
           <p>
-            Default: keyless DuckDuckGo HTML, which may be rate-limited or challenged. Optionally
-            enter a Brave Search API key for its supported search API. Search keys are memory-only
-            and never saved or exported. Current engine: {search || 'loading'}.
+            Default: keyless DuckDuckGo HTML with Bing RSS fallback; both may be rate-limited or
+            challenged. Optionally enter a Brave Search API key for its supported search API. Search
+            keys are memory-only and never saved or exported. Current engine: {search || 'loading'}.
           </p>
           <label className="field">
             <span>Brave Search API key (memory only)</span>
@@ -197,7 +207,11 @@ export function ResearchPlanner({ state, onState }: { state: State; onState: (s:
       {runs.length > 0 && (
         <label className="field">
           <span>Saved research runs</span>
-          <select value={run?.id || ''} onChange={(e) => setSelected(e.target.value)}>
+          <select
+            aria-label="Saved research runs"
+            value={run?.id || ''}
+            onChange={(e) => setSelected(e.target.value)}
+          >
             {runs.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.input.goal.slice(0, 65)} — {r.status} · attempt {r.attempt}
@@ -249,7 +263,8 @@ export function ResearchPlanner({ state, onState }: { state: State; onState: (s:
               <h3>Review proposed changes</h3>
               <p className="preline">{run.proposal.summary}</p>
               <p>
-                Generated tasks start as todo, projects as Planned and gates as Not started.
+                Applying sets your explicitly entered weekly capacity to {run.input.weeklyHours}{' '}
+                hours. Generated tasks start as todo, projects as Planned and gates as Not started.
                 Retrieved source records and an audit note are also saved on apply.{' '}
                 {run.input.replaceStarter
                   ? 'Unused default starter tasks/gates will be replaced.'

@@ -21,6 +21,7 @@ jobs:
       - run: npm run format:check
       - run: npm run check
       - run: node scripts/smoke-launcher.mjs
+      - run: node scripts/smoke-latex.mjs
       - run: npm audit --omit=dev --audit-level=moderate
       - run: npx playwright install chromium --with-deps
       - run: npm run test:e2e

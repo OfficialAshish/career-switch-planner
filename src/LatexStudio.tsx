@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { State } from '../shared/schema';
-import { styledResume } from '../shared/latex-template';
+import { styledResume, classicResume } from '../shared/latex-template';
 import { api } from './api';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 function decode(value: string) {
@@ -63,11 +63,12 @@ function PdfPreview({ pdf }: { pdf: string }) {
 }
 export function LatexStudio({ state, onState }: { state: State; onState: (s: State) => void }) {
   const first = state.resumeDocuments[0];
+  const [template, setTemplate] = useState('classic');
   const [draft, setDraft] = useState(
     first || {
       id: crypto.randomUUID(),
       title: 'My resume',
-      source: styledResume(state),
+      source: classicResume(state),
       updatedAt: new Date().toISOString(),
     },
   );
@@ -193,9 +194,12 @@ export function LatexStudio({ state, onState }: { state: State; onState: (s: Sta
       return;
     const d = state.resumeDocuments.find((d) => d.id === id);
     if (d) {
+      sequence.current++;
       setDraft(d);
       savedText.current = JSON.stringify([d.id, d.title, d.source]);
       setSaved(true);
+      setTrusted(false);
+      setLive(false);
       setPdf('');
       setCompiled('');
       setError('');
@@ -212,6 +216,7 @@ export function LatexStudio({ state, onState }: { state: State; onState: (s: Sta
         <label className="field">
           <span>Resume document</span>
           <select
+            aria-label="Resume document"
             value={state.resumeDocuments.some((d) => d.id === draft.id) ? draft.id : ''}
             onChange={(e) => select(e.target.value)}
           >
@@ -225,16 +230,30 @@ export function LatexStudio({ state, onState }: { state: State; onState: (s: Sta
             ))}
           </select>
         </label>
+        <label className="field">
+          <span>New document style</span>
+          <select
+            aria-label="New document style"
+            value={template}
+            onChange={(e) => setTemplate(e.target.value)}
+          >
+            <option value="classic">Compact classic · centered name, black rules</option>
+            <option value="blue">Blue professional · left-aligned name</option>
+          </select>
+        </label>
         <button
           type="button"
           onClick={() => {
             if (!saved && !confirm('Replace unsaved editor text?')) return;
+            sequence.current++;
             setDraft({
               id: crypto.randomUUID(),
               title: 'New resume',
-              source: styledResume(state),
+              source: template === 'classic' ? classicResume(state) : styledResume(state),
               updatedAt: new Date().toISOString(),
             });
+            setTrusted(false);
+            setLive(false);
             setPdf('');
             setCompiled('');
           }}
@@ -254,12 +273,15 @@ export function LatexStudio({ state, onState }: { state: State; onState: (s: Sta
                 return;
               }
               if (!saved && !confirm('Replace unsaved editor text?')) return;
+              sequence.current++;
               setDraft({
                 id: crypto.randomUUID(),
                 title: f.name.replace(/\.tex$/i, ''),
                 source: await f.text(),
                 updatedAt: new Date().toISOString(),
               });
+              setTrusted(false);
+              setLive(false);
               setPdf('');
               setCompiled('');
               e.target.value = '';
@@ -377,6 +399,7 @@ export function LatexStudio({ state, onState }: { state: State; onState: (s: Sta
           <label className="field">
             <span>LaTeX source</span>
             <textarea
+              aria-label="LaTeX source"
               className="latex-code"
               spellCheck={false}
               value={draft.source}

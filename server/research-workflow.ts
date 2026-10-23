@@ -115,6 +115,8 @@ export function plannedState(state: State, run: ResearchRun): State {
     );
   }
   current = applyOperations(current, researchOperations(run));
+  // Capacity is entered explicitly by the owner, not inferred by the model.
+  current.profile.weeklyHours = run.input.weeklyHours;
   return parseState(current);
 }
 export class ResearchWorkflow {
@@ -168,8 +170,9 @@ export class ResearchWorkflow {
       engine:
         this.key || process.env.BRAVE_SEARCH_API_KEY
           ? 'Brave Search'
-          : 'DuckDuckGo HTML (best effort)',
+          : 'DuckDuckGo / Bing RSS (best effort)',
       keyAvailable: Boolean(this.key || process.env.BRAVE_SEARCH_API_KEY),
+      busy: Boolean(this.active),
     };
   }
   async list() {
@@ -283,7 +286,7 @@ export class ResearchWorkflow {
           );
         await this.persist(run);
       }
-      for (const query of run.queries) {
+      for (const query of run.sources.length >= 2 ? [] : run.queries) {
         await stage('Searching: ' + query.slice(0, 80));
         try {
           const results = await this.dependencies.search(
@@ -347,6 +350,14 @@ export class ResearchWorkflow {
         run.input.includeContext,
       );
       check();
+      const citedText = [
+        run.proposal.summary,
+        ...run.proposal.operations.filter((op) => op.kind === 'note').map((op) => op.value.body),
+      ].join('\n');
+      if (!run.sources.some((source) => citedText.includes(source.url)))
+        throw new Error(
+          'The model omitted citations to retrieved evidence. No plan was applied. Retry with a stronger structured-output model.',
+        );
       plannedState(snapshot, run);
       if (run.sources.length < 2)
         warn(
@@ -386,8 +397,8 @@ export class ResearchWorkflow {
   async import(input: unknown) {
     const list = researchRunSchema.array().max(30).parse(input);
     for (const old of list) {
+      if (this.runs.has(old.id)) continue;
       const run = structuredClone(old);
-      run.id = randomUUID();
       if (run.status !== 'applied') {
         run.status = 'interrupted';
         run.error = 'Restored research archive: regenerate against this workspace before applying.';

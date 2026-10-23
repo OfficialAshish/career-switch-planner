@@ -67,7 +67,7 @@ export async function fetchPublicHtml(
           return;
         }
         if (
-          !/^(text\/html|text\/plain|application\/xhtml\+xml)/i.test(
+          !/^(text\/html|text\/plain|text\/xml|application\/(?:xhtml\+xml|rss\+xml|xml))/i.test(
             res.headers['content-type'] || '',
           )
         ) {
@@ -143,34 +143,62 @@ export async function searchWeb(query: string, key?: string): Promise<SearchResu
       }))
       .filter((r: SearchResult) => r.url.startsWith('https://'));
   }
-  const { html } = await fetchPublicHtml(
-    'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query),
-  );
-  const $ = cheerio.load(html);
-  const results: SearchResult[] = [];
-  $('.result').each((_i, el) => {
-    const a = $(el).find('.result__a').first();
-    let href = a.attr('href') || '';
-    try {
-      const u = new URL(href, 'https://html.duckduckgo.com');
-      href = u.searchParams.get('uddg') || u.href;
-      const target = new URL(href);
-      if (
-        target.protocol === 'https:' &&
-        !target.username &&
-        !target.password &&
-        results.length < 5
-      )
-        results.push({
-          title: a.text().trim().slice(0, 300),
-          url: target.href,
-          snippet: $(el).find('.result__snippet').text().trim().slice(0, 500),
-        });
-    } catch {}
-  });
-  if (!results.length)
-    throw new Error(
-      'Search returned no readable results (possibly a bot challenge). Retry later or supply authoritative source URLs. No search evidence was invented.',
+  let duckError = '';
+  try {
+    const { html } = await fetchPublicHtml(
+      'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query),
     );
-  return results;
+    const $ = cheerio.load(html);
+    const results: SearchResult[] = [];
+    $('.result').each((_i, el) => {
+      const a = $(el).find('.result__a').first();
+      let href = a.attr('href') || '';
+      try {
+        const u = new URL(href, 'https://html.duckduckgo.com');
+        href = u.searchParams.get('uddg') || u.href;
+        const target = new URL(href);
+        if (
+          target.protocol === 'https:' &&
+          !target.username &&
+          !target.password &&
+          results.length < 5
+        )
+          results.push({
+            title: a.text().trim().slice(0, 300),
+            url: target.href,
+            snippet: $(el).find('.result__snippet').text().trim().slice(0, 500),
+          });
+      } catch {}
+    });
+    if (results.length) return results;
+    duckError = 'No readable DuckDuckGo results.';
+  } catch (e: any) {
+    duckError = e.message;
+  }
+  try {
+    const { html } = await fetchPublicHtml(
+      'https://www.bing.com/search?format=rss&q=' + encodeURIComponent(query),
+    );
+    const $ = cheerio.load(html, { xmlMode: true });
+    const fallback: SearchResult[] = [];
+    $('item').each((_i, item) => {
+      const url = $(item).find('link').text().trim();
+      if (url.startsWith('https://') && fallback.length < 5)
+        fallback.push({
+          title: $(item).find('title').text().slice(0, 300),
+          url: url.slice(0, 2048),
+          snippet: $(item).find('description').text().slice(0, 500),
+        });
+    });
+    if (fallback.length) return fallback;
+    throw new Error('No readable Bing RSS results.');
+  } catch (e: any) {
+    throw new Error(
+      'Keyless search unavailable. DuckDuckGo: ' +
+        duckError +
+        ' Bing: ' +
+        e.message +
+        ' Configure Brave Search or supply authoritative URLs, then retry.',
+    );
+  }
 }

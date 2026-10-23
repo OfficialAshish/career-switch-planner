@@ -25,3 +25,7 @@ The project does not auto-update, deploy, install Node, install models or run cl
 ## Reporting
 
 Do not open a public issue containing credentials, personal resumes, client data or exploit payloads with private data. Use GitHub’s private vulnerability reporting if enabled on this repository; otherwise contact a maintainer through a private channel listed on their GitHub profile. Provide a synthetic reproduction and affected commit. No security audit or zero-vulnerability guarantee is implied by passing tests.
+
+## Optional native compiler and online research
+
+LaTeX compilation is opt-in and accepts only explicitly trusted source. `--untrusted`, no shell escape, temporary cwd, minimal environment and time/output bounds are defense in depth, **not an OS sandbox**. Compile owner-reviewed source only. Installer archives are pinned to Tectonic 0.17.0 with SHA-256 checks. Research uses fixed search adapters and the public-HTTPS reader, with pinned DNS/redirect checks and body/time bounds. Retrieved text/JDs are untrusted prompts. Schema/citation checks do not establish factual truth or source relevance; review remains necessary. No model shell/file tools or automatic plan application are exposed.

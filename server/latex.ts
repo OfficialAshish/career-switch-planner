@@ -42,6 +42,10 @@ export function execute(
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
     });
+    const killOnExit = () => {
+      child.kill('SIGKILL');
+    };
+    process.once('exit', killOnExit);
     let output = '';
     let timedOut = false;
     const timer = setTimeout(() => {
@@ -54,10 +58,12 @@ export function execute(
       });
     child.on('error', (e) => {
       clearTimeout(timer);
+      process.removeListener('exit', killOnExit);
       reject(e);
     });
     child.on('close', (code) => {
       clearTimeout(timer);
+      process.removeListener('exit', killOnExit);
       if (timedOut) reject(new Error('Compiler timed out. Simplify the document and retry.'));
       else if (code !== 0) reject(new Error(output || `Process exited ${code}`));
       else resolve(output);
@@ -72,7 +78,7 @@ export class LatexCompiler {
   }
   get binary() {
     return (
-      process.env.CAREER_TECTONIC_PATH ||
+      (process.env.CAREER_TECTONIC_PATH ? path.resolve(process.env.CAREER_TECTONIC_PATH) : '') ||
       path.join(this.tools, process.platform === 'win32' ? 'tectonic.exe' : 'tectonic')
     );
   }

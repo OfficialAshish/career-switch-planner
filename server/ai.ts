@@ -67,7 +67,7 @@ export class Provider {
     await atomicWrite(path.join(this.root, 'provider.json'), JSON.stringify(this.config, null, 2));
     return this.info();
   }
-  private async complete(system: string, content: string): Promise<unknown> {
+  private async complete(system: string, content: string, budget = 4096): Promise<unknown> {
     const ollama = this.config.type === 'ollama';
     const endpoint = this.config.endpoint + (ollama ? '/api/chat' : '/chat/completions');
     const key = this.key || process.env.OPENAI_API_KEY || '';
@@ -86,8 +86,12 @@ export class Provider {
           { role: 'user', content },
         ],
         ...(ollama
-          ? { stream: false, format: 'json', options: { num_predict: 4096, temperature: 0.2 } }
-          : { temperature: 0.2, max_tokens: 4096, response_format: { type: 'json_object' } }),
+          ? {
+              stream: false,
+              format: 'json',
+              options: { num_predict: budget, num_ctx: 32768, temperature: 0.2 },
+            }
+          : { temperature: 0.2, max_tokens: budget, response_format: { type: 'json_object' } }),
       }),
     });
     if (!response.ok) {
@@ -173,6 +177,7 @@ export class Provider {
               userInput: input,
               workspace: context,
             }),
+            mode === 'career' ? 8192 : 4096,
           ),
         );
         if (proposal.operations.some((op) => op.kind === 'profile' || op.kind === 'question'))

@@ -22,7 +22,8 @@ const input = {
   replaceStarter: true,
 };
 const proposal = {
-  summary: 'A source-grounded planning exercise, not completed experience.',
+  summary:
+    'A source-grounded planning exercise (https://example.org/guide), not completed experience.',
   operations: [
     {
       kind: 'task' as const,
@@ -103,6 +104,7 @@ test('research is persistent, retryable, grounded and never edits before apply',
     assert.ok(ready.warnings.some((w) => w.includes('Only one source')));
     const next = await flow.apply(created.id, 0);
     assert.equal(next.tasks.length, 1);
+    assert.equal(next.profile.weeklyHours, 12);
     assert.equal(next.tasks[0].track, 'Role');
     assert.equal(next.sessions.length, 0);
     assert.equal(next.sources.length, 1);
