@@ -150,7 +150,19 @@ test('research preserves custom/progress-linked records, rejects fabricated acti
     state.tasks[0].status = 'done';
     state.tasks[0].evidence = 'Real owner evidence';
     state.tasks.push({ ...state.tasks[1], id: 'custom', prerequisites: [state.tasks[1].id] });
+    state.tasks.find((t) => t.id === 'sql')!.estimateMinutes = 90;
+    state.gates[0].criteria = 'Owner-customized assessment criteria';
+    state.topics[0].notes = 'Owner-customized learning context';
     const next = plannedState(state, ready);
+    assert.equal(next.tasks.find((t) => t.id === 'sql')?.estimateMinutes, 90);
+    assert.equal(
+      next.gates.find((g) => g.id === state.gates[0].id)?.criteria,
+      'Owner-customized assessment criteria',
+    );
+    assert.equal(
+      next.topics.find((t) => t.id === state.topics[0].id)?.notes,
+      'Owner-customized learning context',
+    );
     assert.ok(next.tasks.some((t) => t.id === 'custom'));
     assert.ok(next.tasks.some((t) => t.id === state.tasks[1].id));
     assert.ok(next.tasks.some((t) => t.status === 'done'));

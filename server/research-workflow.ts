@@ -108,12 +108,13 @@ export function plannedState(state: State, run: ResearchRun): State {
           for (const dep of t.prerequisites) if (removeTopics.delete(dep)) topicChanged = true;
     }
     current.topics = current.topics.filter((t) => !removeTopics.has(t.id));
-    const template = new Set(seed.tasks.map((t) => t.id));
+    const template = new Map(seed.tasks.map((t) => [t.id, t]));
     const remove = new Set(
       current.tasks
         .filter(
           (t) =>
             template.has(t.id) &&
+            isDeepStrictEqual({ ...t, createdAt: '' }, { ...template.get(t.id)!, createdAt: '' }) &&
             t.status === 'todo' &&
             !t.evidence.trim() &&
             !current.sessions.some((s) => s.taskId === t.id),
@@ -121,6 +122,9 @@ export function plannedState(state: State, run: ResearchRun): State {
         .map((t) => t.id),
     );
     for (const topic of current.topics) if (topic.taskId) remove.delete(topic.taskId);
+    // A new plan may intentionally depend on an existing starter outcome.
+    for (const op of researchOperations(run))
+      if (op.kind === 'task') for (const dep of op.value.prerequisites) remove.delete(dep);
     // Keep any starter required by a preserved record, transitively.
     let changed = true;
     while (changed) {
@@ -130,9 +134,9 @@ export function plannedState(state: State, run: ResearchRun): State {
           for (const dep of t.prerequisites) if (remove.delete(dep)) changed = true;
     }
     current.tasks = current.tasks.filter((t) => !remove.has(t.id));
-    const gates = new Set(seed.gates.map((g) => g.id));
+    const gates = new Map(seed.gates.map((g) => [g.id, g]));
     current.gates = current.gates.filter(
-      (g) => !(gates.has(g.id) && g.status === 'Not started' && !g.evidence.trim()),
+      (g) => !(gates.has(g.id) && isDeepStrictEqual(g, gates.get(g.id))),
     );
   }
   current = applyOperations(current, researchOperations(run));
