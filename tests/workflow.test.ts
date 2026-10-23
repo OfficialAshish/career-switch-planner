@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile as fsWrite } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { Store } from '../server/store.js';
@@ -41,10 +41,10 @@ const proposal = {
     },
   ],
 };
-async function until(fn: () => Promise<any>) {
+async function until(fn: () => Promise<any>, idle = () => true) {
   for (let i = 0; i < 100; i++) {
     const r = await fn();
-    if (r.status !== 'running') return r;
+    if (r.status !== 'running' && idle()) return r;
     await new Promise((r) => setTimeout(r, 15));
   }
   throw new Error('Workflow did not finish');
@@ -90,13 +90,19 @@ test('research is persistent, retryable, grounded and never edits before apply',
   try {
     const flow = new ResearchWorkflow(store, provider, dependencies);
     const created = await flow.start(input);
-    const failed = await until(() => flow.get(created.id));
+    const failed = await until(
+      () => flow.get(created.id),
+      () => !flow.settings().busy,
+    );
     assert.equal(failed.status, 'failed');
     assert.equal(store.state.revision, 0);
     assert.equal(store.state.notes.length, 0);
     fail = false;
     await flow.retry(created.id);
-    const ready = await until(() => flow.get(created.id));
+    const ready = await until(
+      () => flow.get(created.id),
+      () => !flow.settings().busy,
+    );
     assert.equal(ready.status, 'ready');
     assert.equal(ready.attempt, 2);
     assert.equal(store.state.tasks.length, 39);
@@ -136,7 +142,10 @@ test('research preserves custom/progress-linked records, rejects fabricated acti
   try {
     const flow = new ResearchWorkflow(store, provider, dependencies);
     const created = await flow.start({ ...input, sourceUrls: ['https://example.org/guide'] });
-    const ready = await until(() => flow.get(created.id));
+    const ready = await until(
+      () => flow.get(created.id),
+      () => !flow.settings().busy,
+    );
     const state = initialState();
     state.tasks[0].status = 'done';
     state.tasks[0].evidence = 'Real owner evidence';
@@ -166,6 +175,44 @@ test('research preserves custom/progress-linked records, rejects fabricated acti
     await store.replace(0, store.state);
     await assert.rejects(flow.apply(created.id, 1), /Workspace changed/);
     assert.equal(store.state.revision, 1);
+  } finally {
+    await store.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('research rejects uncited synthesis and restores interrupted work for retry', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'career-research-'));
+  const store = new Store(root);
+  await store.init();
+  const provider = {
+    info: () => ({ type: 'ollama' }),
+    queries: async () => ({ queries: ['professional requirements'] }),
+    propose: async () => ({ ...proposal, summary: 'Unsupported model response without citations' }),
+  } as unknown as Provider;
+  const dependencies = {
+    search: async () => [],
+    read: async (url: string) => ({ title: 'Guide', url, excerpt: 'Public evidence '.repeat(30) }),
+  };
+  try {
+    const flow = new ResearchWorkflow(store, provider, dependencies);
+    const created = await flow.start({ ...input, sourceUrls: ['https://example.org/guide'] });
+    const failed = await until(
+      () => flow.get(created.id),
+      () => !flow.settings().busy,
+    );
+    assert.equal(failed.status, 'failed');
+    assert.match(failed.error, /omitted citations/);
+    assert.equal(store.state.revision, 0);
+    const archived = structuredClone(failed);
+    archived.status = 'running';
+    await fsWrite(
+      path.join(root, 'research-runs', archived.id + '.json'),
+      JSON.stringify(archived),
+    );
+    const restarted = new ResearchWorkflow(store, provider, dependencies);
+    assert.equal((await restarted.get(archived.id)).status, 'interrupted');
+    assert.equal((await restarted.get(archived.id)).sources.length, 1);
   } finally {
     await store.close();
     await rm(root, { recursive: true, force: true });
