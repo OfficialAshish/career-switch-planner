@@ -1289,3 +1289,9 @@ summary {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The original narrow details style is for practice fallback briefs, not editors. */
+.research-planner details,
+.latex-studio > details {
+  max-width: none;
+}
