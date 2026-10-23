@@ -171,10 +171,10 @@ export async function workbook(
       'This week',
       {
         formula:
-          'SUMIFS(Sessions!C2:C20001,Sessions!B2:B20001,">="&TEXT(TODAY()-WEEKDAY(TODAY(),2)+1,"yyyy-mm-dd"),Sessions!B2:B20001,"<="&TEXT(TODAY(),"yyyy-mm-dd"))/60',
+          'SUMIFS(Sessions!C2:C20001,Sessions!B2:B20001,">="&(TODAY()-WEEKDAY(TODAY(),2)+1),Sessions!B2:B20001,"<"&(TODAY()+1))/60',
         result: p.actualMinutes / 60,
       },
-      'Monday-start calendar week; session dates are ISO text',
+      'Monday-start calendar week; dates are real spreadsheet dates',
     ],
     [
       'Remaining work',
@@ -350,12 +350,18 @@ export async function workbook(
         Object.fromEntries(
           headers.map((h) => [
             h,
-            Array.isArray((record as any)[h])
-              ? JSON.stringify((record as any)[h])
-              : (record as any)[h],
+            ['date', 'checkedAt'].includes(h) &&
+            /^\d{4}-\d{2}-\d{2}$/.test(String((record as any)[h]))
+              ? new Date((record as any)[h] + 'T12:00:00Z')
+              : Array.isArray((record as any)[h])
+                ? JSON.stringify((record as any)[h])
+                : (record as any)[h],
           ]),
         ),
       );
+    headers.forEach((h, i) => {
+      if (['date', 'checkedAt'].includes(h)) s.getColumn(i + 1).numFmt = 'yyyy-mm-dd';
+    });
     s.getCell(1, headers.length + 1).value = '_delete';
     s.autoFilter = {
       from: { row: 1, column: 1 },

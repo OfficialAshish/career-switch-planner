@@ -11,13 +11,13 @@
 
 ## Local verification
 
-- Node 24 / Linux: formatting, client/server TypeScript, **33 domain/API/export/protocol tests**, production build, **7 browser journeys**, shell launcher smoke and production dependency audit pass (zero vulnerabilities at the registry snapshot).
+- Node 24 / Linux: formatting, client/server TypeScript, **34 domain/API/export/protocol tests**, production build, **7 browser journeys**, shell launcher smoke and production dependency audit pass (zero vulnerabilities at the registry snapshot).
 - Browser suite includes desktop/mobile overflow capture of all **11 routes**, topic editing/persistence, saved prompts, external Markdown import/apply, workbook editing/import/apply and short-screen sidebar scrolling.
 - Workbook tests include full-source Unicode chunks, arrays, profile/resources/prompts, app-only edits, overlapping conflicts, same-ID safety, deletions/references, formula rejection, ZIP guards and full cross-workspace transfer with image remapping and explicit confirmation.
 - LibreOffice recalculation/resave → app import: **zero unintended changes**, 33 topics retained, formulas and hidden portable baseline retained. Direct Microsoft Excel / Google Sheets round-trip is **not verified**.
 - AI syllabus protocol is tested with a synthetic local provider, including rejecting manufactured explain-ready status. No real model-quality or paid-key claim.
 - Public-source/privacy scan passes; owner resumes and token files remain outside the repository. Private editable resume ZIP remains a separate handoff.
-- First v0.3 checkpoint `ee12fa5` passed a fresh public-clone install, formatting, 31 tests, production build, 7 browser journeys and launcher smoke. Ubuntu CI is green; Windows completed check/launcher/native compiler/audit and is downloading Chromium. Final refinements add bounded professional-summary/verified-skill context, optional planned projects/gates/drills, clearer navigation and two extra tests; check their own Actions revision after pushing.
+- First v0.3 checkpoint `ee12fa5` passed a fresh public-clone install, formatting, 31 tests, production build, 7 browser journeys and launcher smoke. Ubuntu and Windows CI both passed for checkpoint ee12fa5. Final refinements add bounded professional-summary/verified-skill context, optional planned projects/gates/drills, clearer navigation and two extra tests; check their own Actions revision after pushing.
 
 ## Honest limits and recovery
 

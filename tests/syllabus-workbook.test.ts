@@ -267,3 +267,29 @@ test('prompt includes bounded saved baseline while excluding contact fields and 
   assert.ok(!prompt.includes(state.tasks[0].evidence));
   assert.ok(prompt.length < 60000);
 });
+
+test('weekly dashboard uses numeric spreadsheet dates and source preserves CRLF exactly', async () => {
+  const state = initialState();
+  state.sessions.push({
+    id: 'weekly',
+    date: '2026-10-22',
+    minutes: 45,
+    track: 'DSA',
+    summary: 'Known date fixture',
+    taskId: '',
+  });
+  state.resumeDocuments.push({
+    id: 'crlf',
+    title: 'Exact CRLF',
+    source: '\\documentclass{article}\r\n% exact bytes\r\n',
+    updatedAt: 'now',
+  });
+  const w = await book(state);
+  assert.ok(w.getWorksheet('Sessions')!.getCell('B2').value instanceof Date);
+  assert.equal(w.getWorksheet('Sessions')!.getCell('B2').numFmt, 'yyyy-mm-dd');
+  assert.ok(!w.getWorksheet('Dashboard')!.getCell('B5').formula.includes('TEXT('));
+  const result = await reconcileWorkbook(await bytes(w), state);
+  assert.equal(result.state!.sessions[0].date, state.sessions[0].date);
+  assert.equal(result.state!.resumeDocuments[0].source, state.resumeDocuments[0].source);
+  assert.equal(result.changes.length, 0);
+});
