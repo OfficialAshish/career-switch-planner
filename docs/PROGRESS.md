@@ -1,49 +1,51 @@
-# Engineering progress
+# Engineering progress — v0.2
 
-## Status
+## Shipped implementation
 
-Working local-first v0.1 application implemented, visually reviewed and tested. Implementation checkpoint `457ac77` passed fresh-clone installation, formatting, all tests, build and launcher checks. See GitHub for checks on later documentation-only revisions. No calendar deadline, salary promise or guaranteed placement is built into the plan.
+Local-first LaTeX editing and research-driven planning are implemented and pushed to `main` in https://github.com/OfficialAshish/career-switch-planner. No mandatory switch date, invented experience or guaranteed career result.
 
-- Repository: https://github.com/OfficialAshish/career-switch-planner
-- Branch: `main`; initial README commit `ec86791` preserved.
-- Public source contains generic templates only. Personal archives, starter workspaces and credentials are outside the repository.
+- Foundation release: `0f7c801` (v0.1.0).
+- v0.2 implementation checkpoints: `581b69c` → `f299917` → `5deb22e` → `13d8d3e` → `6da0713` → `f42bdb4`.
+- Public repository contains generic templates and synthetic test data only. Owner resumes, private workspaces and authentication files are outside it.
 
-## Completed acceptance
+## Delivered v0.2 acceptance
 
-| Package          | Evidence                                                                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dynamic planning | Editable capacity/scope, prerequisite order, time logged once, remaining estimates, forecast ranges and pace calibration; domain tests            |
-| Persistence      | Strict schema/reference validation, atomic saves, revision conflicts, single-process lock, 40 recovery points; API/store tests                    |
-| Local security   | Loopback binding, Host/Origin/CSRF checks, bounded imports/provider responses, private network source-reader restrictions; synthetic tests        |
-| Interface        | Ten React routes; quick capture, practice/recall, notes/screenshots, projects/gates, claims/resumes, interviews, applications, research, settings |
-| Optional AI      | Disabled by default; Ollama/compatible providers, memory-only key, context opt-in, review before applying, no shell/delete/profile/catalog edits  |
-| Files            | JSON/image backup and restore preview; XLSX plain-value upserts; DOCX/LaTeX/print resume; automated exchange tests                                |
-| Setup            | Windows BAT and shell launchers; initial dependency install/build, then local server; isolated launcher smoke tests                               |
-| Open source      | MIT license, README, contribution/security guides, architecture, data, AI, recovery, privacy, decisions and verification documentation            |
+| Area              | Implementation / evidence                                                                                                                                                    |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exact source      | UTF-8 `.tex` import, source-preserving autosave, revision checks, multiple documents, manual source download; API/browser tests                                              |
+| Resume layout     | Compact classic centered-name/black-rule and blue professional templates; owner source remains independent from structured claims                                            |
+| Real PDF          | Optional checksum-pinned Tectonic 0.17 install; explicit trust/package-network controls; real compilation, local PDF.js preview, stale-result guard, complete clean download |
+| No watermark      | Compiler output is source-owned; no app branding, warning, URL or footer injected                                                                                            |
+| Role-aware intake | Goal, demonstrated baseline, JD, location, capacity, optional URLs/context; nonsoftware Role track                                                                           |
+| Research          | Model-generated bounded queries; DuckDuckGo → Bing RSS fallback or optional Brave API; pinned-DNS public HTTPS retrieval with redirect/body/time bounds                      |
+| Planning          | Built-in source-grounding/uncertainty prompts, retrieved citation requirement, strict records and references, progress preservation, explicit full review/apply              |
+| Retry/recovery    | Durable run stages, retained evidence, explicit retry/cancel, interrupted-run recovery, stale-revision rejection and atomic workspace recovery points                        |
+| Privacy           | Keys memory/environment only; no model shell/file tools; no silent achievements/applications; opt-in network/context                                                         |
+| Portability       | Old workspace compatibility; full JSON includes LaTeX documents and run history; Excel scope stays intentionally narrow                                                      |
 
 ## Verification ledger
 
-- Linux: Node 24.22.1, npm 11.19.1, system Chromium.
-- `npm run check`: client/server type checks, **13 tests**, production build pass.
-- `npm run test:e2e`: **3 browser tests** pass, including all ten routes at 1440px/390px, capture/reload, practice, resume modes, visible dialog errors, screenshot uploads, mobile navigation and dark theme.
-- Manual visual inspection: each route at desktop/mobile, AI error, image editor, navigation and dark mobile states. Fixed missing icon glyphs, modal footer/error visibility and route scroll retention found during review.
-- `node scripts/smoke-launcher.mjs`: Linux shell launcher builds and serves an isolated synthetic workspace.
-- Fresh public clone at **`457ac77edf64b20104c979e0f004d7889cfe31ec`**: `npm ci`, formatting, type checks, 13 tests, build, 3 browser tests and shell launcher smoke all passed.
-- `npm audit`: zero reported vulnerabilities in the local full dependency snapshot; registry audit is not a security guarantee.
-- GitHub Actions run **39850892067**, revision **4242d625**: **Ubuntu and Windows passed**, including launcher smoke tests and Chromium journeys. Later release-polish commits require their own checks.
-- Synthetic XLSX audit: valid package, 13 sheets, 8 formulas, no external links, zero issues. ISO date strings intentionally retain canonical import format (reported as two text-date warnings). Final dashboard rendered and visually reviewed after print/font refinements.
-- `npm run test:exports` creates repeatable synthetic Office fixtures under ignored `test-results/exports`; no private workspace is used.
+- Linux Node 24.22.1/npm 11.19.1/system Chromium: formatting, client/server TypeScript, **18 domain/API/export tests**, production build and **5 browser journeys** pass.
+- Browser tests cover original CRLF source retention, autosave/reload, actual PDF canvas rendering and byte-identical download from a synthetic compiler fixture, stale-PDF guard, research consent/retry/review, plus existing ten-route desktop/mobile workflows.
+- Native Linux smoke: official compiler archive digest/install, real PDF generation, cached offline build and invalid-source rejection pass. Both generic templates also compiled with real Tectonic.
+- GitHub Actions **39919168777**, revision `13d8d3e`: **Ubuntu and Windows succeeded**, including native compiler install/real PDF/offline cache/error tests, launcher smoke, production audit and Chromium journeys. Later revisions must have their own results checked in Actions; a workflow file alone is not success.
+- Fresh public clone at `6da0713`: locked clean installation, formatting, type checks, 18 tests, build, 5 browser journeys and shell launcher smoke pass. Later `f42bdb4` changes only panel width; local full tests/browser checks pass.
+- Production dependency audit snapshot: **zero reported vulnerabilities**, not a security guarantee.
+- New editor/research screens individually reviewed at desktop/mobile. Review fixes include explicit accessible labels, reset source-trust consent, bounded failed live compilation, visible stale results, full-width intake and screenshot scroll normalization.
+- Keyless live search fallback and actual public-page retrieval were exercised. Real provider quality, paid API credentials and all websites are not verified. Model protocol/JSON/context/key boundaries use a synthetic local server.
+- Owner-supplied one-page resume was privately transcribed into fixed-layout editable text and an easier reflowing variant; both compile to one page. Fixed-layout text and link destinations were compared with the reference (whitespace/bullet/equivalent punctuation normalized). No personal source/PDF was committed. Original placeholder links remain explicitly called out in the private handoff.
 
-- Privacy scan: tracked files exclude private contact data; supplied token absent from all local commit diffs and Git remote URL. Personal starter import preview/apply validated separately outside the public repository, with zero invented sessions/attempts.
+## Recovery
 
-## Known limits
+Clone public `main`, read README, `docs/LATEX.md`, `docs/AI.md`, `docs/RECOVERY.md`, `docs/DATA.md` and `docs/VERIFICATION.md`. Personal state lives in ignored `data/`. Stop before copying that folder. Keep external full JSON/folder backups; local recovery revisions do not protect against disk loss.
 
-Native interactive Windows double-click/browser UX, actual Google Sheets conversion, real Ollama/paid-provider quality, all external question/job URLs, LaTeX compilation and formal accessibility/security audits were not performed. Source reader is an explicit public-page fetcher, not autonomous web search. See `VERIFICATION.md` and `ROADMAP.md`.
+## Honest limits
 
-## Recovery and continuation
+- Native compiler is not an OS sandbox. Compile owner-reviewed source only. Single-file `.tex`; no multi-file asset manager. Fonts/packages must be available; cached offline builds need a prior warm cache. macOS/ARM archive configurations still require native owner testing.
+- Source citation and schema checks do not verify entailment, source relevance, salary, eligibility, achievements or hiring readiness. Search can be blocked; use supplied authoritative URLs/Brave and review warnings.
+- Model speed/quality and paid-provider billing, Google Sheets conversion, native interactive Windows browser UX, arbitrary LaTeX/fonts, ATS outcomes, every external URL and formal audits are not promised.
+- Research history has a 30-run cap; source documents a 20-document cap. Archive the stopped folder before a separate workspace when full. No encrypted-at-rest storage, hosted multiuser service, cloud sync or automatic applications.
 
-Inspect the working tree before syncing. Read this file, `DECISIONS.md`, `ARCHITECTURE.md` and known limitations. Never overwrite unrelated work or commit `data/`, `.env`, credentials or personal documents. Completed checkpoints are pushed to `main`; Git history and the private Notion engineering tracker retain recovery context. No access token is part of source or Git remote URLs.
+## Security handoff
 
-## v0.2 work in progress
-
-Requested upgrades: exact-source LaTeX editing/real PDF compilation, and application-triggered autonomous research/planning. Implemented optional checksum-pinned Tectonic installation, source autosave, PDF.js preview, durable research runs, built-in role-aware query/synthesis prompts, guarded search/source fetch, retry/cancel/review/apply and old-workspace compatibility. Sixteen local tests and existing browser journeys pass at the first implementation checkpoint. Real Tectonic 0.17 installation and original resume compilation passed; full new-feature browser, security and cross-platform checks are still in progress. Private source documents remain outside the public repository.
+Never commit `data/`, `.env`, private resumes or credentials. The token pasted in chat is exposed and must be revoked by its owner. Temporary local authentication is deleted after final remote confirmation; deletion cannot remove a secret from chat history.

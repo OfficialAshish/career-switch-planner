@@ -35,8 +35,17 @@ Linux build workspace; Node 24.22.1, npm 11.19.1, system Chromium. Tests use iso
 - A real Ollama model’s quality/performance or paid cloud-provider credentials/billing. Protocol uses a synthetic mock.
 - Every question URL’s present availability/premium status. Catalog is titles/links with selected original fallback briefs, not a promise of free access.
 - Every job/source website; dynamic/authenticated/paywalled pages may fail and require paste.
-- LaTeX compilation for arbitrary Unicode, ATS scoring or identical Office/PDF pagination.
+- Arbitrary LaTeX/font compatibility, ATS scoring or pixel-identical PDF pagination across machines. The native compiler itself is tested; see below.
 - Power loss on every filesystem, antivirus interference, very large workspaces or malicious local processes.
 - Formal penetration test, accessibility certification or external code audit.
 
 CI results and final remote SHA must be checked on the repository, not inferred from a workflow file. Any unavailable result is recorded as unavailable, not green.
+
+## v0.2 additional evidence
+
+- 18 Node tests and 5 browser journeys pass locally, including source/backup preservation, imported CRLF text, trusted compilation consent, PDF preview/download, stale-output protection, research retry/persistence/interruption/citation failure, nonsoftware planning and preservation of progressed/custom work.
+- Official Tectonic install/checksum, actual PDF generation, cached offline compilation and invalid source rejection pass on Linux and Windows in Actions run [39919168777](https://github.com/OfficialAshish/career-switch-planner/actions/runs/39919168777). Windows standard-directory lookup was fixed after the native smoke exposed the issue.
+- A retry timing test was corrected to wait for durable persistence and worker idle, rather than starting another worker while the previous failure was still saving. Apply also refuses an active worker.
+- Keyless DuckDuckGo returned a challenge in the test environment; Bing RSS fallback returned real results and a page was retrieved. These are best-effort integrations, not a supported search-service SLA. No Brave key or paid model was tested.
+- Both generic resume templates compiled with the real native compiler. The owner-specific latest attachment was separately rendered as a private one-page editable source/PDF, never public test data. It retains owner wording and placeholder links; it is not an independent fact check.
+- A fresh public clone at `6da0713` passed locked installation, formatting, 18 tests, build, 5 browser journeys and shell launcher smoke. Check Actions for the newest pushed revision; older green runs do not prove later changes.
